@@ -1,0 +1,17 @@
+﻿# backend
+/target/
+
+# frontend
+/frontend/node_modules/
+/frontend/dist/
+
+# IDE
+/.idea/
+/.vscode/
+
+# OS
+Thumbs.db
+.DS_Store
+
+# runtime
+/storage/

@@ -1,0 +1,53 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: wiki-backend
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/wiki?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:wzp}
+  jpa:
+    hibernate:
+      ddl-auto: update
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+    show-sql: false
+  data:
+    redis:
+      host: localhost
+      port: 6379
+  mail:
+    host: ${MAIL_HOST:}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    port: ${MAIL_PORT:25}
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
+
+wiki:
+  jwt-secret: CHANGE_ME_TO_A_LONG_RANDOM_SECRET_KEY_32B_PLUS
+  jwt-expire-hours: 24
+  verify-code-expire-minutes: 5
+  verify-code-send-interval-seconds: 60
+  recycle-reserve-days: 30
+  draft-auto-save-seconds: 30
+  local-storage-dir: ./storage/docs
+  avatar-storage-dir: ./storage/avatars
+  sms-enabled: false
+  sms-gateway-url: ${SMS_GATEWAY_URL:}
+  sms-api-key: ${SMS_API_KEY:}
+  cloud-cleanup-enabled: false
+  cloud-cleanup-url: ${CLOUD_CLEANUP_URL:}
+  cloud-cleanup-api-key: ${CLOUD_CLEANUP_API_KEY:}

@@ -1,0 +1,15 @@
+package com.wiki.app.common;
+
+public enum ErrorCode {
+    BAD_REQUEST,
+    UNAUTHORIZED,
+    FORBIDDEN,
+    NOT_FOUND,
+    VALIDATION_FAILED,
+    VERIFY_CODE_INVALID,
+    RATE_LIMITED,
+    USER_ALREADY_EXISTS,
+    DOC_CONFLICT,
+    EDIT_LOCKED,
+    INTERNAL_ERROR
+}
