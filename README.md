@@ -21,7 +21,7 @@
 - 文档管理：Markdown编辑、发布状态、文档树管理
 - 版本历史：保存版本、查看版本、回滚任意版本
 - 版本对比：双版本行级 diff（新增/删除/修改/未变）
-- 全文检索：标题/内容 LIKE 搜索
+- 全文检索：支持 Elasticsearch 搜索（不可用时自动降级为 MySQL LIKE）
 - 文档权限：公开/团队/私有访问与编辑控制
 - 协同编辑（OT）：
   - WebSocket 实时协作
@@ -75,6 +75,9 @@ MySQL 启动时也支持环境变量覆盖：
 - `DB_USERNAME`
 - `DB_PASSWORD`
 - `SERVER_PORT`（默认 `8080`）
+- `SEARCH_ES_ENABLED`（是否启用 ES 检索，默认 `false`）
+- `ES_URIS`（ES 地址，默认 `http://localhost:9200`）
+- `SEARCH_ES_REINDEX_ON_STARTUP`（启动时是否重建索引，默认 `false`）
 
 默认管理员账号：
 

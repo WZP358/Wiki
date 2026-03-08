@@ -19,6 +19,7 @@ com\wiki\app\collab\CollabWebSocketHandler.class
 com\wiki\app\doc\DocumentController.class
 com\wiki\app\user\UserRole.class
 com\wiki\app\common\BusinessException.class
+com\wiki\app\doc\search\WikiDocumentSearchRepository.class
 com\wiki\app\doc\dto\DraftResponse.class
 com\wiki\app\doc\dto\DiffLineResponse$DiffLineResponseBuilder.class
 com\wiki\app\user\AuthController.class
@@ -32,6 +33,7 @@ com\wiki\app\config\AppProperties.class
 com\wiki\app\user\UserRepository.class
 com\wiki\app\collab\ThreeWayMerge.class
 com\wiki\app\doc\dto\CreateDocumentRequest.class
+com\wiki\app\doc\search\WikiDocumentSearchEntity.class
 com\wiki\app\doc\WikiDocumentRepository.class
 com\wiki\app\kb\dto\CreateKnowledgeBaseRequest.class
 com\wiki\app\user\dto\SendUpdateCodeRequest.class
@@ -83,6 +85,7 @@ com\wiki\app\config\SecurityConfig.class
 com\wiki\app\user\dto\UserProfileResponse.class
 com\wiki\app\security\SecurityUtils.class
 com\wiki\app\user\dto\RegisterRequest.class
+com\wiki\app\doc\search\SearchIndexInitializer.class
 com\wiki\app\kb\dto\MemberResponse.class
 com\wiki\app\doc\RecycleCleanupScheduler.class
 com\wiki\app\kb\dto\MemberResponse$MemberResponseBuilder.class
@@ -90,6 +93,7 @@ com\wiki\app\admin\AdminController.class
 com\wiki\app\share\ShareController.class
 com\wiki\app\share\ShareService.class
 com\wiki\app\share\ShareLinkRepository.class
+com\wiki\app\doc\search\DocumentSearchService.class
 com\wiki\app\doc\DocumentDraft.class
 com\wiki\app\doc\AsyncCleanupService.class
 com\wiki\app\share\dto\ShareResponse.class

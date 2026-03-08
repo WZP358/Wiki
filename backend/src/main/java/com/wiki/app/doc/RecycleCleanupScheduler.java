@@ -14,17 +14,20 @@ public class RecycleCleanupScheduler {
     private final DocumentDraftRepository draftRepository;
     private final AsyncCleanupService asyncCleanupService;
     private final AppProperties appProperties;
+    private final DocumentService documentService;
 
     public RecycleCleanupScheduler(WikiDocumentRepository documentRepository,
                                    DocumentVersionRepository versionRepository,
                                    DocumentDraftRepository draftRepository,
                                    AsyncCleanupService asyncCleanupService,
-                                   AppProperties appProperties) {
+                                   AppProperties appProperties,
+                                   DocumentService documentService) {
         this.documentRepository = documentRepository;
         this.versionRepository = versionRepository;
         this.draftRepository = draftRepository;
         this.asyncCleanupService = asyncCleanupService;
         this.appProperties = appProperties;
+        this.documentService = documentService;
     }
 
     @Scheduled(cron = "0 30 3 * * ?")
@@ -35,6 +38,7 @@ public class RecycleCleanupScheduler {
             versionRepository.deleteByDocId(doc.getId());
             draftRepository.deleteByDocId(doc.getId());
             documentRepository.delete(doc);
+            documentService.onDocPurgedByScheduler(doc.getId());
             asyncCleanupService.cleanupDocumentArtifacts(doc.getId());
         }
     }

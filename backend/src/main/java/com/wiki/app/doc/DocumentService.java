@@ -41,6 +41,7 @@ public class DocumentService {
     private final OperationLogService operationLogService;
     private final AsyncCleanupService asyncCleanupService;
     private final LocalDocStorageService localDocStorageService;
+    private final DocumentSearchService documentSearchService;
 
     public DocumentService(WikiDocumentRepository documentRepository,
                            DocumentVersionRepository versionRepository,
@@ -52,7 +53,8 @@ public class DocumentService {
                            ObjectMapper objectMapper,
                            OperationLogService operationLogService,
                            AsyncCleanupService asyncCleanupService,
-                           LocalDocStorageService localDocStorageService) {
+                           LocalDocStorageService localDocStorageService,
+                           DocumentSearchService documentSearchService) {
         this.documentRepository = documentRepository;
         this.versionRepository = versionRepository;
         this.draftRepository = draftRepository;
@@ -64,6 +66,7 @@ public class DocumentService {
         this.operationLogService = operationLogService;
         this.asyncCleanupService = asyncCleanupService;
         this.localDocStorageService = localDocStorageService;
+        this.documentSearchService = documentSearchService;
     }
 
     @Transactional
@@ -84,9 +87,10 @@ public class DocumentService {
         doc.setViewCount(0L);
         documentRepository.save(doc);
 
-        snapshot(doc, user, "创建文档");
+        snapshot(doc, user, "Create document");
         invalidateListCache(doc.getKbId());
         cacheHtml(doc);
+        documentSearchService.upsert(doc);
         operationLogService.record(user.getUserId(), user.getUsername(), "CREATE_DOC", "DOC", doc.getId().toString(), ip, doc.getTitle());
         return toResponse(doc);
     }
@@ -129,7 +133,7 @@ public class DocumentService {
         ensureEditable(doc, user);
 
         if (request.getBaseVersion() != null && !request.getBaseVersion().equals(doc.getVersionNo())) {
-            throw new BusinessException(ErrorCode.DOC_CONFLICT, "文档已被他人更新，请先同步最新内容再提交");
+            throw new BusinessException(ErrorCode.DOC_CONFLICT, "Document has been updated by another user. Sync latest content before submitting");
         }
 
         if (request.getTitle() != null) {
@@ -148,9 +152,10 @@ public class DocumentService {
         doc.setVersionNo(doc.getVersionNo() + 1);
 
         documentRepository.save(doc);
-        snapshot(doc, user, request.getCommitMessage() == null ? "更新文档" : request.getCommitMessage());
+        snapshot(doc, user, request.getCommitMessage() == null ? "Update document" : request.getCommitMessage());
         invalidateListCache(doc.getKbId());
         cacheHtml(doc);
+        documentSearchService.upsert(doc);
 
         operationLogService.record(user.getUserId(), user.getUsername(), "UPDATE_DOC", "DOC", doc.getId().toString(), ip, doc.getTitle());
         return toResponse(doc);
@@ -165,6 +170,7 @@ public class DocumentService {
         invalidateListCache(doc.getKbId());
         redisTemplate.delete(htmlKey(doc.getId()));
         redisTemplate.delete(lockKey(doc.getId()));
+        documentSearchService.markDeleted(doc.getId());
         operationLogService.record(user.getUserId(), user.getUsername(), "DELETE_DOC", "DOC", doc.getId().toString(), ip, doc.getTitle());
     }
 
@@ -178,16 +184,17 @@ public class DocumentService {
     @Transactional
     public DocumentResponse restore(Long docId, CurrentUser user, String ip) {
         WikiDocument doc = documentRepository.findById(docId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "文档不存在"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Document not found"));
         if (doc.getDeletedAt() == null) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "文档不在回收站");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "Document is not in recycle bin");
         }
         if (!doc.getOwnerId().equals(user.getUserId()) && !user.isAdmin()) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "仅创建者或管理员可恢复");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "Only owner or admin can restore document");
         }
         doc.setDeletedAt(null);
         documentRepository.save(doc);
         invalidateListCache(doc.getKbId());
+        documentSearchService.upsert(doc);
         operationLogService.record(user.getUserId(), user.getUsername(), "RESTORE_DOC", "DOC", doc.getId().toString(), ip, doc.getTitle());
         return toResponse(doc);
     }
@@ -195,13 +202,13 @@ public class DocumentService {
     @Transactional
     public void purge(Long docId, CurrentUser user, boolean confirmed, String ip) {
         if (!confirmed) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "此操作不可逆，请二次确认后再删除");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "This operation is irreversible. Please confirm before purging");
         }
 
         WikiDocument doc = documentRepository.findById(docId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "文档不存在"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Document not found"));
         if (!doc.getOwnerId().equals(user.getUserId()) && !user.isAdmin()) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "仅创建者或管理员可彻底删除");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "Only owner or admin can purge document");
         }
 
         versionRepository.deleteByDocId(docId);
@@ -209,6 +216,7 @@ public class DocumentService {
         documentRepository.delete(doc);
         redisTemplate.delete(htmlKey(docId));
         redisTemplate.delete(lockKey(docId));
+        documentSearchService.delete(docId);
         asyncCleanupService.cleanupDocumentArtifacts(docId);
         operationLogService.record(user.getUserId(), user.getUsername(), "PURGE_DOC", "DOC", docId.toString(), ip, doc.getTitle());
     }
@@ -237,12 +245,12 @@ public class DocumentService {
         ensureReadable(doc, user);
 
         DocumentVersion left = versionRepository.findById(leftVersionId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "左侧版本不存在"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Left version not found"));
         DocumentVersion right = versionRepository.findById(rightVersionId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "右侧版本不存在"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Right version not found"));
 
         if (!left.getDocId().equals(docId) || !right.getDocId().equals(docId)) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "版本与文档不匹配");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "闁绘鐗婂﹢鐗堢▔鎼淬垺鐎俊妤嬬导缁楀宕犺ぐ鎺戝赋");
         }
 
         List<DiffLineResponse> lines = diffByLine(left.getMarkdownContent(), right.getMarkdownContent());
@@ -262,9 +270,9 @@ public class DocumentService {
         ensureEditable(doc, user);
 
         DocumentVersion version = versionRepository.findById(versionId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "历史版本不存在"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "History version not found"));
         if (!version.getDocId().equals(docId)) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "版本与文档不匹配");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "闁绘鐗婂﹢鐗堢▔鎼淬垺鐎俊妤嬬导缁楀宕犺ぐ鎺戝赋");
         }
 
         doc.setTitle(version.getTitle());
@@ -273,16 +281,17 @@ public class DocumentService {
         doc.setVersionNo(doc.getVersionNo() + 1);
         documentRepository.save(doc);
 
-        snapshot(doc, user, "回滚到版本 v" + version.getVersionNo());
+        snapshot(doc, user, "闁搞儳鍋炵划鎾礆閹殿喖顣奸柡?v" + version.getVersionNo());
         invalidateListCache(doc.getKbId());
         cacheHtml(doc);
-        operationLogService.record(user.getUserId(), user.getUsername(), "ROLLBACK_DOC", "DOC", doc.getId().toString(), ip, "回滚到版本" + version.getVersionNo());
+        documentSearchService.upsert(doc);
+        operationLogService.record(user.getUserId(), user.getUsername(), "ROLLBACK_DOC", "DOC", doc.getId().toString(), ip, "Rollback to version " + version.getVersionNo());
         return toResponse(doc);
     }
 
     public List<DocumentResponse> search(Long kbId, String keyword, CurrentUser user) {
         knowledgeBaseService.ensureKbVisible(kbId, user);
-        return documentRepository.search(kbId, keyword)
+        return searchDocs(kbId, keyword)
                 .stream()
                 .filter(doc -> canRead(doc, user))
                 .map(this::toResponse)
@@ -305,14 +314,14 @@ public class DocumentService {
         String key = lockKey(docId);
         String lockOwner = redisTemplate.opsForValue().get(key);
         if (lockOwner != null && !lockOwner.equals(user.getUsername())) {
-            return new EditLockResponse(false, lockOwner, "该文档正在被其他人编辑");
+            return new EditLockResponse(false, lockOwner, "Document is being edited by another user");
         }
         Boolean locked = redisTemplate.opsForValue().setIfAbsent(key, user.getUsername(), LOCK_TTL);
         if (Boolean.FALSE.equals(locked) && lockOwner == null) {
             lockOwner = redisTemplate.opsForValue().get(key);
-            return new EditLockResponse(false, lockOwner, "获取编辑锁失败");
+            return new EditLockResponse(false, lockOwner, "Document is being edited by another user");
         }
-        return new EditLockResponse(true, user.getUsername(), "已获取编辑锁");
+        return new EditLockResponse(true, user.getUsername(), "Edit lock acquired");
     }
 
     public void unlock(Long docId, CurrentUser user) {
@@ -377,9 +386,10 @@ public class DocumentService {
         }
         doc.setVersionNo(doc.getVersionNo() + 1);
         documentRepository.save(doc);
-        snapshot(doc, user, commitMessage == null ? "实时协作更新" : commitMessage);
+        snapshot(doc, user, commitMessage == null ? "Realtime collaborative update" : commitMessage);
         invalidateListCache(doc.getKbId());
         cacheHtml(doc);
+        documentSearchService.upsert(doc);
         operationLogService.record(user.getUserId(), user.getUsername(), "COLLAB_EDIT", "DOC", doc.getId().toString(), ip, doc.getTitle());
         return RealtimeDocSnapshot.builder()
                 .docId(doc.getId())
@@ -392,16 +402,16 @@ public class DocumentService {
 
     public WikiDocument loadActive(Long docId) {
         WikiDocument doc = documentRepository.findById(docId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "文档不存在"));
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Document not found"));
         if (doc.getDeletedAt() != null) {
-            throw new BusinessException(ErrorCode.NOT_FOUND, "文档已删除");
+            throw new BusinessException(ErrorCode.NOT_FOUND, "Document has been deleted");
         }
         return doc;
     }
 
     private void ensureReadable(WikiDocument doc, CurrentUser user) {
         if (!canRead(doc, user)) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "无权查看该文档");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "No permission to view this document");
         }
     }
 
@@ -424,7 +434,7 @@ public class DocumentService {
         if (role == MemberRole.EDITOR || role == MemberRole.ADMIN) {
             return;
         }
-        throw new BusinessException(ErrorCode.FORBIDDEN, "无编辑权限");
+        throw new BusinessException(ErrorCode.FORBIDDEN, "No permission to edit this document");
     }
 
     private void snapshot(WikiDocument doc, CurrentUser user, String message) {
@@ -543,11 +553,15 @@ public class DocumentService {
         return UUID.randomUUID().toString().replace("-", "").substring(0, 12);
     }
 
+    public void onDocPurgedByScheduler(Long docId) {
+        documentSearchService.delete(docId);
+    }
+
     @Transactional
     public DocumentResponse publicView(Long docId) {
         WikiDocument doc = loadActive(docId);
         if (!Boolean.TRUE.equals(doc.getPublished())) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "该文档未发布，无法分享访问");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "Document is not published and cannot be viewed publicly");
         }
         doc.setViewCount(doc.getViewCount() + 1);
         documentRepository.save(doc);
@@ -564,6 +578,22 @@ public class DocumentService {
     @FunctionalInterface
     private interface DocListSupplier {
         List<WikiDocument> get();
+    }
+
+    private List<WikiDocument> searchDocs(Long kbId, String keyword) {
+        List<Long> esDocIds = documentSearchService.searchDocIds(kbId, keyword);
+        if (esDocIds == null) {
+            return documentRepository.search(kbId, keyword);
+        }
+        if (esDocIds.isEmpty()) {
+            return List.of();
+        }
+        List<WikiDocument> docs = documentRepository.findByIdInAndDeletedAtIsNull(esDocIds);
+        Map<Long, WikiDocument> docMap = docs.stream().collect(Collectors.toMap(WikiDocument::getId, doc -> doc));
+        return esDocIds.stream()
+                .map(docMap::get)
+                .filter(Objects::nonNull)
+                .toList();
     }
 
     private List<DiffLineResponse> diffByLine(String leftText, String rightText) {

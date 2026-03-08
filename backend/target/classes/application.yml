@@ -20,6 +20,8 @@ spring:
     redis:
       host: localhost
       port: 6379
+  elasticsearch:
+    uris: ${ES_URIS:http://localhost:9200}
   mail:
     host: ${MAIL_HOST:}
     username: ${MAIL_USERNAME:}
@@ -45,6 +47,8 @@ wiki:
   draft-auto-save-seconds: 30
   local-storage-dir: ./storage/docs
   avatar-storage-dir: ./storage/avatars
+  search-es-enabled: ${SEARCH_ES_ENABLED:false}
+  search-es-reindex-on-startup: ${SEARCH_ES_REINDEX_ON_STARTUP:false}
   sms-enabled: false
   sms-gateway-url: ${SMS_GATEWAY_URL:}
   sms-api-key: ${SMS_API_KEY:}

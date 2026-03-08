@@ -1,5 +1,6 @@
 ﻿# backend
 /target/
+/backend/target/
 
 # frontend
 /frontend/node_modules/

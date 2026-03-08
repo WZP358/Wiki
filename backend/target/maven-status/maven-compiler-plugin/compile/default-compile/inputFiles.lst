@@ -40,6 +40,10 @@ D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\dto\VersionDiffResponse.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\LocalDocStorageService.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\MarkdownService.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\RecycleCleanupScheduler.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\search\DocumentSearchService.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\search\SearchIndexInitializer.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\search\WikiDocumentSearchEntity.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\search\WikiDocumentSearchRepository.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\WikiDocument.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\WikiDocumentRepository.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\kb\dto\CreateKnowledgeBaseRequest.java
