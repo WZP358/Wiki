@@ -1,6 +1,6 @@
 ﻿<template>
   <div class="app-shell">
-    <aside v-if="!isPublicRoute" class="sidebar">
+    <aside v-if="!isPublicRoute" :class="['sidebar', { collapsed: sidebarCollapsed }]">
       <div class="sidebar-header">
         <div class="logo">
           <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
@@ -8,39 +8,44 @@
             <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
             <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          <span class="logo-text">Wiki</span>
+          <span v-show="!sidebarCollapsed" class="logo-text">Wiki</span>
         </div>
+        <button class="collapse-btn" @click="toggleSidebar" :title="sidebarCollapsed ? '展开侧边栏' : '收起侧边栏'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path :d="sidebarCollapsed ? 'M9 18l6-6-6-6' : 'M15 18l-6-6 6-6'"/>
+          </svg>
+        </button>
       </div>
 
       <nav class="sidebar-nav">
-        <router-link to="/" class="nav-item">
+        <router-link to="/" class="nav-item" :title="sidebarCollapsed ? '工作台' : ''">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <rect x="3" y="3" width="7" height="7"/>
             <rect x="14" y="3" width="7" height="7"/>
             <rect x="14" y="14" width="7" height="7"/>
             <rect x="3" y="14" width="7" height="7"/>
           </svg>
-          <span>工作台</span>
+          <span v-show="!sidebarCollapsed">工作台</span>
         </router-link>
-        <router-link to="/profile" class="nav-item">
+        <router-link to="/profile" class="nav-item" :title="sidebarCollapsed ? '个人中心' : ''">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="8" r="4"/>
             <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
           </svg>
-          <span>个人中心</span>
+          <span v-show="!sidebarCollapsed">个人中心</span>
         </router-link>
-        <router-link to="/recycle" class="nav-item">
+        <router-link to="/recycle" class="nav-item" :title="sidebarCollapsed ? '回收站' : ''">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/>
           </svg>
-          <span>回收站</span>
+          <span v-show="!sidebarCollapsed">回收站</span>
         </router-link>
-        <router-link v-if="auth.isAdmin" to="/admin/logs" class="nav-item">
+        <router-link v-if="auth.isAdmin" to="/admin/logs" class="nav-item" :title="sidebarCollapsed ? '管理日志' : ''">
           <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
             <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
           </svg>
-          <span>管理日志</span>
+          <span v-show="!sidebarCollapsed">管理日志</span>
         </router-link>
       </nav>
 
@@ -66,7 +71,7 @@
       </div>
     </aside>
 
-    <main :class="['main-content', { full: isPublicRoute }]">
+    <main :class="['main-content', { full: isPublicRoute, 'sidebar-collapsed': sidebarCollapsed }]">
       <router-view />
     </main>
 
@@ -76,7 +81,7 @@
 </template>
 
 <script setup>
-import { computed, onMounted } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from './store/auth'
 import { useThemeStore } from './store/theme'
@@ -89,8 +94,20 @@ const auth = useAuthStore()
 const theme = useThemeStore()
 
 const isPublicRoute = computed(() => route.meta.public)
+const sidebarCollapsed = ref(false)
 
-onMounted(() => theme.apply())
+onMounted(() => {
+  theme.apply()
+  const saved = localStorage.getItem('sidebar-collapsed')
+  if (saved !== null) {
+    sidebarCollapsed.value = saved === 'true'
+  }
+})
+
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+  localStorage.setItem('sidebar-collapsed', String(sidebarCollapsed.value))
+}
 
 function toggleTheme() {
   const order = ['system', 'light', 'dark']
@@ -121,11 +138,20 @@ function logout() {
   top: 0;
   bottom: 0;
   z-index: 100;
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 64px;
 }
 
 .sidebar-header {
   padding: 20px 16px;
   border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
 }
 
 .logo {
@@ -135,6 +161,8 @@ function logout() {
   color: var(--brand);
   font-size: 18px;
   font-weight: 600;
+  min-width: 0;
+  flex: 1;
 }
 
 .logo svg {
@@ -143,6 +171,39 @@ function logout() {
 
 .logo-text {
   color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  transition: opacity 0.2s ease;
+}
+
+.sidebar.collapsed .logo-text {
+  opacity: 0;
+  width: 0;
+}
+
+.collapse-btn {
+  width: 28px;
+  height: 28px;
+  border: none;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+}
+
+.collapse-btn:hover {
+  background: var(--line-light);
+  color: var(--brand);
+}
+
+.collapse-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .sidebar-nav {
@@ -164,6 +225,17 @@ function logout() {
   font-weight: 500;
   transition: all 0.2s ease;
   cursor: pointer;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar.collapsed .nav-item {
+  justify-content: center;
+  padding: 10px;
+}
+
+.sidebar.collapsed .nav-item span {
+  display: none;
 }
 
 .nav-item:hover {
@@ -208,6 +280,11 @@ function logout() {
   margin-left: 240px;
   min-width: 0;
   padding: 24px;
+  transition: margin-left 0.3s ease;
+}
+
+.main-content.sidebar-collapsed {
+  margin-left: 64px;
 }
 
 .main-content.full {

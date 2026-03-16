@@ -1,44 +1,88 @@
 ﻿<template>
   <div class="editor-layout">
-    <!-- 左侧文档树 -->
-    <aside class="sidebar">
+    <!-- 左侧文档树和操作栏 -->
+    <aside :class="['sidebar', { collapsed: sidebarCollapsed }]">
       <div class="sidebar-header">
-        <h3 class="sidebar-title">目录</h3>
-        <button class="btn-icon" @click="createDoc" title="新建文档">+</button>
-      </div>
-      <div class="search-box">
-        <input v-model="keyword" class="search-input" placeholder="搜索文档..." @keyup.enter="search" />
-      </div>
-      <nav class="doc-tree">
-        <div
-          v-for="node in tree"
-          :key="node.id"
-          class="doc-item"
-          :class="{ active: String(node.id) === String(docId) }"
-          @click="openDoc(node.id)"
-        >
-          <svg class="doc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+        <h3 v-show="!sidebarCollapsed" class="sidebar-title">目录</h3>
+        <button class="btn-icon collapse-btn" @click="toggleSidebar" :title="sidebarCollapsed ? '展开' : '收起'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path :d="sidebarCollapsed ? 'M9 18l6-6-6-6' : 'M15 18l-6-6 6-6'"/>
           </svg>
-          <span class="doc-title">{{ node.title }}</span>
+        </button>
+      </div>
+
+      <div v-show="!sidebarCollapsed" class="sidebar-content">
+        <!-- 搜索框 -->
+        <div class="search-box">
+          <svg class="search-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"/>
+            <path d="m21 21-4.35-4.35"/>
+          </svg>
+          <input v-model="keyword" class="search-input" placeholder="搜索文档..." @keyup.enter="search" />
         </div>
-      </nav>
+
+        <!-- 操作按钮组 -->
+        <div class="action-buttons">
+          <button class="action-btn" @click="createDoc" title="新建文档">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 5v14M5 12h14"/>
+            </svg>
+            <span>新建文档</span>
+          </button>
+          <button v-if="doc" class="action-btn" @click="openVersions" title="历史版本">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="12" r="10"/>
+              <polyline points="12 6 12 12 16 14"/>
+            </svg>
+            <span>历史版本</span>
+          </button>
+          <button v-if="doc" class="action-btn" @click="createShare" title="分享">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="18" cy="5" r="3"/>
+              <circle cx="6" cy="12" r="3"/>
+              <circle cx="18" cy="19" r="3"/>
+              <path d="m8.59 13.51 6.83 3.98M15.41 6.51l-6.82 3.98"/>
+            </svg>
+            <span>分享</span>
+          </button>
+          <button v-if="doc" class="action-btn action-btn-primary" @click="saveDoc" title="发布">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            <span>发布</span>
+          </button>
+        </div>
+
+        <!-- 文档树 -->
+        <nav class="doc-tree">
+          <div class="doc-tree-header">
+            <span class="tree-title">文档列表</span>
+          </div>
+          <div
+            v-for="node in tree"
+            :key="node.id"
+            class="doc-item"
+            :class="{ active: String(node.id) === String(docId) }"
+            @click="openDoc(node.id)"
+          >
+            <svg class="doc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+            </svg>
+            <span class="doc-title">{{ node.title }}</span>
+          </div>
+        </nav>
+      </div>
     </aside>
 
     <!-- 主编辑区 -->
     <main v-if="doc" class="editor-main">
-      <!-- 顶部导航栏 -->
+      <!-- 简化的顶部栏 -->
       <header class="editor-header">
         <div class="header-left">
-          <div class="breadcrumb">
-            <span class="breadcrumb-item">研发部</span>
-            <span class="breadcrumb-sep">/</span>
-            <span class="breadcrumb-item current">{{ form.title || '未命名文档' }}</span>
-          </div>
           <span class="status-badge" :class="getStatusClass()">{{ getStatusText() }}</span>
-        </div>
-        <div class="header-right">
           <div class="collab-avatars" v-if="collaborators.length > 0">
             <div v-for="p in collaborators.slice(0, 3)" :key="p.sessionId" class="collab-avatar" :title="p.username">
               <img v-if="p.avatarUrl" :src="p.avatarUrl" alt="" />
@@ -46,15 +90,13 @@
             </div>
             <span v-if="collaborators.length > 3" class="collab-more">+{{ collaborators.length - 3 }}</span>
           </div>
+        </div>
+        <div class="header-right">
           <select v-model="form.visibility" class="visibility-select">
             <option value="PUBLIC">公开</option>
             <option value="TEAM">团队</option>
             <option value="PRIVATE">私有</option>
           </select>
-          <button class="btn-secondary" @click="openVersions">历史版本</button>
-          <button class="btn-secondary" @click="createShare">分享</button>
-          <button class="btn-primary" @click="saveDoc">发布</button>
-          <button class="btn-icon" @click="showMoreMenu = !showMoreMenu">⋯</button>
         </div>
       </header>
 
@@ -201,6 +243,13 @@ const router = useRouter()
 const kbId = computed(() => route.params.kbId)
 const docId = computed(() => route.params.docId)
 
+const sidebarCollapsed = ref(false)
+
+function toggleSidebar() {
+  sidebarCollapsed.value = !sidebarCollapsed.value
+  localStorage.setItem('editor-sidebar-collapsed', String(sidebarCollapsed.value))
+}
+
 const tree = ref([])
 const doc = ref(null)
 const form = reactive({
@@ -238,6 +287,10 @@ let syncTimer = null
 const collaborators = computed(() => participants.value.filter(p => p.sessionId !== mySessionId.value))
 
 onMounted(async () => {
+  const saved = localStorage.getItem('editor-sidebar-collapsed')
+  if (saved !== null) {
+    sidebarCollapsed.value = saved === 'true'
+  }
   await loadTree()
   if (docId.value) {
     await loadDoc(docId.value)
@@ -588,20 +641,26 @@ async function search() {
 
 /* 左侧边栏 */
 .sidebar {
-  width: 260px;
+  width: 280px;
   background: var(--panel);
   border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  transition: width 0.3s ease;
+}
+
+.sidebar.collapsed {
+  width: 48px;
 }
 
 .sidebar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 16px 20px;
+  padding: 16px;
   border-bottom: 1px solid var(--line);
+  gap: 8px;
 }
 
 .sidebar-title {
@@ -609,6 +668,19 @@ async function search() {
   font-weight: 600;
   color: var(--text);
   margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+}
+
+.sidebar.collapsed .sidebar-title {
+  display: none;
+}
+
+.sidebar-content {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  overflow: hidden;
 }
 
 .btn-icon {
@@ -624,6 +696,7 @@ async function search() {
   align-items: center;
   justify-content: center;
   transition: all 0.2s;
+  flex-shrink: 0;
 }
 
 .btn-icon:hover {
@@ -631,14 +704,31 @@ async function search() {
   color: var(--brand);
 }
 
+.collapse-btn svg {
+  width: 16px;
+  height: 16px;
+}
+
 .search-box {
   padding: 12px 16px;
   border-bottom: 1px solid var(--line);
+  position: relative;
+}
+
+.search-icon {
+  position: absolute;
+  left: 28px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 16px;
+  height: 16px;
+  color: var(--text-secondary);
+  pointer-events: none;
 }
 
 .search-input {
   width: 100%;
-  padding: 8px 12px;
+  padding: 8px 12px 8px 36px;
   border: 1px solid var(--line);
   border-radius: 6px;
   background: var(--bg);
@@ -653,10 +743,77 @@ async function search() {
   background: var(--panel);
 }
 
+/* 操作按钮组 */
+.action-buttons {
+  padding: 12px 16px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.action-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  background: var(--panel);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  width: 100%;
+  text-align: left;
+}
+
+.action-btn:hover {
+  background: var(--line-light);
+  border-color: var(--brand);
+}
+
+.action-btn svg {
+  width: 16px;
+  height: 16px;
+  flex-shrink: 0;
+  color: var(--text-secondary);
+}
+
+.action-btn-primary {
+  background: var(--brand);
+  color: white;
+  border-color: var(--brand);
+}
+
+.action-btn-primary:hover {
+  background: var(--brand-hover);
+  border-color: var(--brand-hover);
+}
+
+.action-btn-primary svg {
+  color: white;
+}
+
+/* 文档树 */
 .doc-tree {
   flex: 1;
   overflow-y: auto;
   padding: 8px;
+}
+
+.doc-tree-header {
+  padding: 8px 12px;
+  margin-bottom: 8px;
+}
+
+.tree-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
 }
 
 .doc-item {
@@ -686,6 +843,10 @@ async function search() {
   color: var(--text-secondary);
 }
 
+.doc-item.active .doc-icon {
+  color: var(--brand);
+}
+
 .doc-title {
   flex: 1;
   font-size: 14px;
@@ -710,38 +871,13 @@ async function search() {
   padding: 12px 24px;
   border-bottom: 1px solid var(--line);
   background: var(--panel);
+  min-height: 52px;
 }
 
 .header-left {
   display: flex;
   align-items: center;
   gap: 12px;
-}
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.breadcrumb-item {
-  transition: color 0.2s;
-}
-
-.breadcrumb-item:hover {
-  color: var(--brand);
-  cursor: pointer;
-}
-
-.breadcrumb-item.current {
-  color: var(--text);
-  font-weight: 500;
-}
-
-.breadcrumb-sep {
-  color: var(--muted);
 }
 
 .status-badge {
@@ -814,39 +950,6 @@ async function search() {
 }
 
 .visibility-select:hover {
-  border-color: var(--brand);
-}
-
-.btn-primary,
-.btn-secondary {
-  padding: 6px 16px;
-  border-radius: 6px;
-  font-size: 13px;
-  font-weight: 500;
-  cursor: pointer;
-  transition: all 0.2s;
-  border: none;
-  outline: none;
-}
-
-.btn-primary {
-  background: var(--brand);
-  color: white;
-}
-
-.btn-primary:hover {
-  background: var(--brand-hover);
-}
-
-.btn-secondary {
-  background: transparent;
-  color: var(--text-secondary);
-  border: 1px solid var(--line);
-}
-
-.btn-secondary:hover {
-  background: var(--line-light);
-  color: var(--text);
   border-color: var(--brand);
 }
 
