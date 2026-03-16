@@ -95,6 +95,10 @@ async function uploadAvatar(event) {
 }
 
 async function login() {
+  if (!loginForm.account || !loginForm.password) {
+    tip.value = '请输入用户名和密码'
+    return
+  }
   const res = await authApi.login(loginForm)
   authStore.setLogin(res)
   router.push('/')

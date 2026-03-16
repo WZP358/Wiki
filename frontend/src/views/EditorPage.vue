@@ -17,7 +17,10 @@
           :class="{ active: String(node.id) === String(docId) }"
           @click="openDoc(node.id)"
         >
-          <span class="doc-icon">📄</span>
+          <svg class="doc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+          </svg>
           <span class="doc-title">{{ node.title }}</span>
         </div>
       </nav>
@@ -44,9 +47,9 @@
             <span v-if="collaborators.length > 3" class="collab-more">+{{ collaborators.length - 3 }}</span>
           </div>
           <select v-model="form.visibility" class="visibility-select">
-            <option value="PUBLIC">📖 公开</option>
-            <option value="TEAM">👥 团队</option>
-            <option value="PRIVATE">🔒 私有</option>
+            <option value="PUBLIC">公开</option>
+            <option value="TEAM">团队</option>
+            <option value="PRIVATE">私有</option>
           </select>
           <button class="btn-secondary" @click="openVersions">历史版本</button>
           <button class="btn-secondary" @click="createShare">分享</button>
@@ -59,9 +62,27 @@
       <div class="doc-header">
         <input v-model="form.title" class="doc-title-input" placeholder="未命名文档" />
         <div class="doc-meta">
-          <span class="meta-item">👤 {{ doc.author || '王经理' }}</span>
-          <span class="meta-item">📅 最后更新于 {{ formatDate(doc.updatedAt) }}</span>
-          <span class="meta-item">👁️ {{ doc.viewCount || 8 }} 次阅读</span>
+          <span class="meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="12" cy="8" r="4"/>
+              <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+            </svg>
+            {{ doc.author || '王经理' }}
+          </span>
+          <span class="meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <rect x="3" y="4" width="18" height="18" rx="2" ry="2"/>
+              <path d="M16 2v4M8 2v4M3 10h18"/>
+            </svg>
+            最后更新于 {{ formatDate(doc.updatedAt) }}
+          </span>
+          <span class="meta-item">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/>
+              <circle cx="12" cy="12" r="3"/>
+            </svg>
+            {{ doc.viewCount || 8 }} 次阅读
+          </span>
         </div>
       </div>
 
@@ -85,7 +106,11 @@
 
       <!-- 分享提示 -->
       <div v-if="shareLink" class="share-toast">
-        <span>✓ 分享链接已生成：{{ location.origin }}/share/{{ shareLink }}</span>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"/>
+          <polyline points="22 4 12 14.01 9 11.01"/>
+        </svg>
+        <span>分享链接已生成：{{ location.origin }}/share/{{ shareLink }}</span>
         <button class="btn-text" @click="shareLink = ''">关闭</button>
       </div>
     </main>
@@ -93,7 +118,12 @@
     <!-- 空状态 -->
     <main v-else class="empty-state">
       <div class="empty-content">
-        <div class="empty-icon">📝</div>
+        <div class="empty-icon">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+          </svg>
+        </div>
         <h3>选择一个文档开始编辑</h3>
         <p>或者创建一个新文档</p>
         <button class="btn-primary" @click="createDoc">新建文档</button>
@@ -143,7 +173,7 @@
     <div v-if="conflict.visible" class="modal-overlay" @click.self="conflict.visible = false">
       <div class="modal-dialog conflict-dialog">
         <div class="modal-header">
-          <h3>⚠️ 检测到冲突</h3>
+          <h3>检测到冲突</h3>
           <button class="btn-icon" @click="conflict.visible = false">×</button>
         </div>
         <div class="modal-body">
@@ -650,8 +680,10 @@ async function search() {
 }
 
 .doc-icon {
-  font-size: 16px;
+  width: 16px;
+  height: 16px;
   flex-shrink: 0;
+  color: var(--text-secondary);
 }
 
 .doc-title {
@@ -854,6 +886,12 @@ async function search() {
   gap: 6px;
 }
 
+.meta-item svg {
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+}
+
 /* 编辑器内容 */
 .editor-content {
   flex: 1;
@@ -935,7 +973,7 @@ async function search() {
   bottom: 24px;
   right: 24px;
   background: var(--panel);
-  border: 1px solid var(--line);
+  border: 1px solid var(--success);
   border-radius: 8px;
   padding: 12px 16px;
   box-shadow: var(--shadow-lg);
@@ -944,6 +982,13 @@ async function search() {
   gap: 12px;
   font-size: 13px;
   animation: slideUp 0.3s ease;
+}
+
+.share-toast svg {
+  width: 18px;
+  height: 18px;
+  color: var(--success);
+  flex-shrink: 0;
 }
 
 @keyframes slideUp {
@@ -984,8 +1029,15 @@ async function search() {
 }
 
 .empty-icon {
-  font-size: 64px;
-  margin-bottom: 16px;
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  color: var(--muted);
+}
+
+.empty-icon svg {
+  width: 100%;
+  height: 100%;
 }
 
 .empty-content h3 {

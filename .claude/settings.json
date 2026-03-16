@@ -4,7 +4,16 @@
       "Bash(mysql -uroot -pwzp -e \"SHOW DATABASES LIKE ''wiki'';\")",
       "Bash(mvn spring-boot:run)",
       "Bash(npm run:*)",
-      "Bash(netstat -ano)"
+      "Bash(netstat -ano)",
+      "Bash(mysql -uroot -pwzp wiki -e \"SELECT id, username, email, phone, role, department_id FROM users WHERE id = 288900303950974977;\")",
+      "Bash(curl -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"account\"\":\"\"test\"\",\"\"password\"\":\"\"password\"\"}' -v)",
+      "Bash(mysql -uroot -pwzp wiki -e \"DELETE FROM users WHERE id = 288900303950974977;\")",
+      "Bash(curl -X POST http://localhost:8080/api/auth/send-code -H \"Content-Type: application/json\" -d '{\"\"\"\"target\"\"\"\":\"\"\"\"test123@example.com\"\"\"\"}')",
+      "Bash(curl -X POST http://localhost:8080/api/auth/register -H \"Content-Type: application/json\" -d '{\"\"\"\"username\"\"\"\":\"\"\"\"testuser\"\"\"\",\"\"\"\"contact\"\"\"\":\"\"\"\"testuser@example.com\"\"\"\",\"\"\"\"code\"\"\"\":\"\"\"\"484535\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"password123\"\"\"\",\"\"\"\"avatarUrl\"\"\"\":\"\"\"\"\"\"\"\"}')",
+      "Bash(curl -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"\"\"account\"\"\"\":\"\"\"\"admin\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"password\"\"\"\"}')",
+      "Bash(curl -s -X POST http://localhost:8080/api/auth/send-code -H \"Content-Type: application/json\" -d '{\"\"\"\"target\"\"\"\":\"\"\"\"newuser@test.com\"\"\"\"}')",
+      "Bash(curl -X POST http://localhost:8080/api/auth/register -H \"Content-Type: application/json\" -d '{\"\"\"\"username\"\"\"\":\"\"\"\"newuser\"\"\"\",\"\"\"\"contact\"\"\"\":\"\"\"\"newuser@test.com\"\"\"\",\"\"\"\"code\"\"\"\":\"\"\"\"325335\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"password123\"\"\"\",\"\"\"\"avatarUrl\"\"\"\":\"\"\"\"\"\"\"\"}')",
+      "Bash(curl -X POST http://localhost:8080/api/auth/login -H \"Content-Type: application/json\" -d '{\"\"\"\"account\"\"\"\":\"\"\"\"newuser\"\"\"\",\"\"\"\"password\"\"\"\":\"\"\"\"password123\"\"\"\"}')"
     ]
   }
 }

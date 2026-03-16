@@ -14,31 +14,54 @@
 
       <nav class="sidebar-nav">
         <router-link to="/" class="nav-item">
-          <span class="nav-icon">📊</span>
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="3" width="7" height="7"/>
+            <rect x="14" y="3" width="7" height="7"/>
+            <rect x="14" y="14" width="7" height="7"/>
+            <rect x="3" y="14" width="7" height="7"/>
+          </svg>
           <span>工作台</span>
         </router-link>
         <router-link to="/profile" class="nav-item">
-          <span class="nav-icon">👤</span>
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="8" r="4"/>
+            <path d="M6 21v-2a4 4 0 0 1 4-4h4a4 4 0 0 1 4 4v2"/>
+          </svg>
           <span>个人中心</span>
         </router-link>
         <router-link to="/recycle" class="nav-item">
-          <span class="nav-icon">🗑️</span>
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m3 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/>
+          </svg>
           <span>回收站</span>
         </router-link>
         <router-link v-if="auth.isAdmin" to="/admin/logs" class="nav-item">
-          <span class="nav-icon">📋</span>
+          <svg class="nav-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+            <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
+          </svg>
           <span>管理日志</span>
         </router-link>
       </nav>
 
       <div class="sidebar-footer">
         <button class="btn-text theme-toggle" @click="toggleTheme" :title="`当前主题: ${theme.mode}`">
-          <span v-if="theme.mode === 'light'">☀️</span>
-          <span v-else-if="theme.mode === 'dark'">🌙</span>
-          <span v-else>🔄</span>
+          <svg v-if="theme.mode === 'light'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="12" cy="12" r="5"/>
+            <path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/>
+          </svg>
+          <svg v-else-if="theme.mode === 'dark'" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/>
+          </svg>
+          <svg v-else viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2"/>
+            <path d="M8 21h8M12 17v4"/>
+          </svg>
         </button>
         <button class="btn-text logout-btn" @click="logout" title="退出登录">
-          <span>🚪</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4M16 17l5-5-5-5M21 12H9"/>
+          </svg>
         </button>
       </div>
     </aside>
@@ -154,9 +177,15 @@ function logout() {
 }
 
 .nav-icon {
-  font-size: 18px;
-  width: 20px;
-  text-align: center;
+  width: 18px;
+  height: 18px;
+  flex-shrink: 0;
+}
+
+.theme-toggle svg,
+.logout-btn svg {
+  width: 18px;
+  height: 18px;
 }
 
 .sidebar-footer {

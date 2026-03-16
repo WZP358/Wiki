@@ -47,7 +47,7 @@ public class KnowledgeBaseService {
         kbRepository.save(kb);
 
         operationLogService.record(user.getUserId(), user.getUsername(), "CREATE_KB", "KB", kb.getId().toString(), ip, "创建知识库");
-        return toResponse(kb);
+        return toResponse(kb, "OWNER");
     }
 
     public List<KnowledgeBaseResponse> listMine(CurrentUser user) {
@@ -57,14 +57,14 @@ public class KnowledgeBaseService {
         // 1. 用户自己创建的知识库（所有类型）
         List<KnowledgeBase> ownedKbs = kbRepository.findByOwnerIdAndDeletedAtIsNull(user.getUserId());
         for (KnowledgeBase kb : ownedKbs) {
-            responses.add(toResponse(kb));
+            responses.add(toResponse(kb, "OWNER"));
         }
 
         // 2. 公司公开知识库（其他人创建的）
         List<KnowledgeBase> companyKbs = kbRepository.findByTypeAndDeletedAtIsNull(KnowledgeBaseType.COMPANY);
         for (KnowledgeBase kb : companyKbs) {
             if (!kb.getOwnerId().equals(user.getUserId())) {
-                responses.add(toResponse(kb));
+                responses.add(toResponse(kb, "MEMBER"));
             }
         }
 
@@ -75,7 +75,7 @@ public class KnowledgeBaseService {
                 if (!kb.getOwnerId().equals(user.getUserId())) {
                     UserAccount kbOwner = userRepository.findById(kb.getOwnerId()).orElse(null);
                     if (kbOwner != null && userAccount.getDepartmentId().equals(kbOwner.getDepartmentId())) {
-                        responses.add(toResponse(kb));
+                        responses.add(toResponse(kb, "MEMBER"));
                     }
                 }
             }
@@ -184,13 +184,14 @@ public class KnowledgeBaseService {
         }
     }
 
-    private KnowledgeBaseResponse toResponse(KnowledgeBase kb) {
+    private KnowledgeBaseResponse toResponse(KnowledgeBase kb, String myRole) {
         return KnowledgeBaseResponse.builder()
                 .id(kb.getId())
                 .name(kb.getName())
                 .type(kb.getType())
                 .description(kb.getDescription())
                 .ownerId(kb.getOwnerId())
+                .myRole(myRole)
                 .build();
     }
 }

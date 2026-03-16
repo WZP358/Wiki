@@ -1,24 +1,24 @@
 ﻿:root {
-  --bg: #f7f8fa;
+  --bg: #f5f7fa;
   --panel: #ffffff;
-  --text: #1f2329;
-  --text-secondary: #646a73;
-  --muted: #8f959e;
-  --brand: #0066ff;
-  --brand-hover: #0052cc;
-  --brand-soft: #e6f0ff;
-  --brand-light: #f0f6ff;
-  --success: #00b96b;
-  --warning: #ff991f;
-  --danger: #f5222d;
-  --line: #e3e5e8;
-  --line-light: #f0f1f3;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
-  --radius-sm: 4px;
-  --radius: 8px;
-  --radius-lg: 12px;
+  --text: #262626;
+  --text-secondary: #595959;
+  --muted: #8c8c8c;
+  --brand: #1890ff;
+  --brand-hover: #40a9ff;
+  --brand-soft: #e6f7ff;
+  --brand-light: #f0f9ff;
+  --success: #52c41a;
+  --warning: #faad14;
+  --danger: #ff4d4f;
+  --line: #e8e8e8;
+  --line-light: #f5f5f5;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --radius-sm: 2px;
+  --radius: 4px;
+  --radius-lg: 8px;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -44,23 +44,23 @@
 }
 
 [data-theme='light'] {
-  --bg: #f7f8fa;
+  --bg: #f5f7fa;
   --panel: #ffffff;
-  --text: #1f2329;
-  --text-secondary: #646a73;
-  --muted: #8f959e;
-  --brand: #0066ff;
-  --brand-hover: #0052cc;
-  --brand-soft: #e6f0ff;
-  --brand-light: #f0f6ff;
-  --success: #00b96b;
-  --warning: #ff991f;
-  --danger: #f5222d;
-  --line: #e3e5e8;
-  --line-light: #f0f1f3;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.12);
+  --text: #262626;
+  --text-secondary: #595959;
+  --muted: #8c8c8c;
+  --brand: #1890ff;
+  --brand-hover: #40a9ff;
+  --brand-soft: #e6f7ff;
+  --brand-light: #f0f9ff;
+  --success: #52c41a;
+  --warning: #faad14;
+  --danger: #ff4d4f;
+  --line: #e8e8e8;
+  --line-light: #f5f5f5;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
+  --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.08);
 }
 
 [data-theme='dark'] {
@@ -96,7 +96,7 @@ body,
   background: var(--bg);
   color: var(--text);
   font-size: 14px;
-  line-height: 1.6;
+  line-height: 1.5715;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
