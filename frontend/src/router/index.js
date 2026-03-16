@@ -6,12 +6,16 @@ import RecyclePage from '../views/RecyclePage.vue'
 import AdminLogsPage from '../views/AdminLogsPage.vue'
 import SharePage from '../views/SharePage.vue'
 import ProfilePage from '../views/ProfilePage.vue'
+import SearchPage from '../views/SearchPage.vue'
+import SettingsPage from '../views/SettingsPage.vue'
 
 const routes = [
   { path: '/auth', component: AuthPage, meta: { public: true } },
   { path: '/share/:token', component: SharePage, meta: { public: true } },
   { path: '/', component: DashboardPage },
   { path: '/editor/:kbId/:docId?', component: EditorPage },
+  { path: '/search', component: SearchPage },
+  { path: '/settings/:kbId?', component: SettingsPage },
   { path: '/recycle', component: RecyclePage },
   { path: '/profile', component: ProfilePage },
   { path: '/admin/logs', component: AdminLogsPage, meta: { admin: true } }

@@ -1,0 +1,488 @@
+<mxfile host="Electron" agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) draw.io/29.3.6 Chrome/140.0.7339.249 Electron/38.8.0 Safari/537.36" version="29.3.6">
+  <diagram name="用户故事地图" id="user-story-map">
+    <mxGraphModel dx="2800" dy="1600" grid="1" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="4000" pageHeight="2400" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- 图例 -->
+        <mxCell id="legend-bg" value="" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#FFFFFF;strokeColor=#666666;strokeWidth=2;" vertex="1" parent="1">
+          <mxGeometry x="3400" y="40" width="520" height="280" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-title" value="图例说明" style="text;html=1;strokeColor=none;fillColor=none;align=center;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=16;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="3400" y="50" width="520" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-activity" value="用户活动" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4A90E2;strokeColor=none;fontSize=12;fontColor=#FFFFFF;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="3420" y="90" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-task" value="用户任务" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="3420" y="130" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-mvp" value="MVP 故事" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="3420" y="170" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-enhanced" value="增强功能" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="3420" y="210" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-future" value="未来规划" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B0B0B0;strokeColor=none;fontSize=11;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="3420" y="250" width="120" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-desc1" value="横向：用户旅程" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="3560" y="90" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-desc2" value="纵向：优先级（上高下低）" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="3560" y="130" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-desc3" value="核心功能，第一版必须实现" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="3560" y="170" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-desc4" value="第二版增强功能" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="3560" y="210" width="340" height="30" as="geometry" />
+        </mxCell>
+        <mxCell id="legend-desc5" value="第三版未来规划" style="text;html=1;strokeColor=none;fillColor=none;align=left;verticalAlign=middle;whiteSpace=wrap;rounded=0;fontSize=11;" vertex="1" parent="1">
+          <mxGeometry x="3560" y="250" width="340" height="30" as="geometry" />
+        </mxCell>
+
+        <!-- 第一层：用户活动 -->
+        <mxCell id="activity1" value="账户管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4A90E2;strokeColor=none;fontSize=14;fontStyle=1;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="40" width="480" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="activity2" value="知识库管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4A90E2;strokeColor=none;fontSize=14;fontStyle=1;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="40" width="480" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="activity3" value="文档创作" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4A90E2;strokeColor=none;fontSize=14;fontStyle=1;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="40" width="800" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="activity4" value="协同工作" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4A90E2;strokeColor=none;fontSize=14;fontStyle=1;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1960" y="40" width="320" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="activity5" value="内容发现" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4A90E2;strokeColor=none;fontSize=14;fontStyle=1;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="2320" y="40" width="480" height="50" as="geometry" />
+        </mxCell>
+        <mxCell id="activity6" value="系统管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#4A90E2;strokeColor=none;fontSize=14;fontStyle=1;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="2840" y="40" width="320" height="50" as="geometry" />
+        </mxCell>
+
+        <!-- 第二层：用户任务 - 账户管理 -->
+        <mxCell id="task1-1" value="注册账号" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="80" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="task1-2" value="登录系统" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="245" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="task1-3" value="管理个人资料" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="410" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 第二层：用户任务 - 知识库管理 -->
+        <mxCell id="task2-1" value="创建知识库" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="600" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="task2-2" value="管理成员" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="765" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="task2-3" value="浏览知识库" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="930" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 第二层：用户任务 - 文档创作 -->
+        <mxCell id="task3-1" value="创建文档" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="task3-2" value="编辑文档" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1285" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="task3-3" value="管理文档树" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="task3-4" value="版本管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1615" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="task3-5" value="删除文档" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1780" y="120" width="140" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 第二层：用户任务 - 协同工作 -->
+        <mxCell id="task4-1" value="实时协作" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="1960" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="task4-2" value="编辑锁管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="2125" y="120" width="155" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 第二层：用户任务 - 内容发现 -->
+        <mxCell id="task5-1" value="搜索文档" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="2320" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="task5-2" value="浏览推荐" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="2485" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="task5-3" value="分享文档" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="2650" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 第二层：用户任务 - 系统管理 -->
+        <mxCell id="task6-1" value="查看操作日志" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="2840" y="120" width="150" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="task6-2" value="监控系统" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#7FB3D5;strokeColor=none;fontSize=12;fontColor=#FFFFFF;align=center;" vertex="1" parent="1">
+          <mxGeometry x="3005" y="120" width="155" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 注册账号（task1-1） -->
+        <mxCell id="story1-1-1" value="作为访客，我想要通过邮箱注册账号，以便快速开始使用系统" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story1-1-2" value="作为访客，我想要通过手机号注册账号，以便使用手机验证码快速注册" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story1-1-3" value="作为访客，我想要在注册时上传头像，以便个性化我的账号" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story1-1-4" value="作为访客，我想要收到验证码，以便验证我的邮箱或手机号" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="430" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story1-1-5" value="作为访客，我想要系统限制验证码请求频率，以便防止恶意注册" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="510" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story1-1-6" value="作为访客，我想要在未配置邮件服务时看到测试验证码，以便体验注册流程" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="80" y="590" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 登录系统（task1-2） -->
+        <mxCell id="story1-2-1" value="作为用户，我想要通过用户名登录，以便访问我的账号" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="245" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story1-2-2" value="作为用户，我想要通过邮箱登录，以便使用邮箱快速登录" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="245" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story1-2-3" value="作为用户，我想要通过手机号登录，以便使用手机号快速登录" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="245" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story1-2-4" value="作为用户，我想要系统记录我的登录日志，以便追踪账号安全" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="245" y="430" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 管理个人资料（task1-3） -->
+        <mxCell id="story1-3-1" value="作为用户，我想要修改我的昵称，以便更新个人信息" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="410" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story1-3-2" value="作为用户，我想要修改我的头像，以便个性化我的账号" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="410" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story1-3-3" value="作为用户，我想要变更我的邮箱，以便使用新邮箱接收通知" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="410" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story1-3-4" value="作为用户，我想要变更我的手机号，以便使用新手机号接收验证码" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="410" y="430" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story1-3-5" value="作为用户，我想要通过验证码确认邮箱/手机号变更，以便保证账号安全" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="410" y="510" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story1-3-6" value="作为用户，我想要切换浅色/暗黑模式，以便适应不同的使用环境" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="410" y="590" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 创建知识库（task2-1） -->
+        <mxCell id="story2-1-1" value="作为用户，我想要创建公开知识库，以便分享知识给所有人" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="600" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story2-1-2" value="作为用户，我想要创建私有知识库，以便保护个人隐私" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="600" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story2-1-3" value="作为用户，我想要创建团队知识库，以便与团队成员协作" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="600" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story2-1-4" value="作为用户，我想要为知识库添加描述，以便说明知识库的用途" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="600" y="430" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 管理成员（task2-2） -->
+        <mxCell id="story2-2-1" value="作为知识库管理员，我想要邀请成员加入知识库，以便团队协作" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="765" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story2-2-2" value="作为知识库管理员，我想要设置成员为只读权限，以便限制编辑" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="765" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story2-2-3" value="作为知识库管理员，我想要设置成员为编辑权限，以便允许编辑文档" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="765" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story2-2-4" value="作为知识库管理员，我想要设置成员为管理员权限，以便共同管理知识库" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="765" y="430" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story2-2-5" value="作为知识库管理员，我想要移除成员，以便管理团队人员" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="765" y="510" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story2-2-6" value="作为知识库管理员，我想要查看成员列表，以便了解团队成员" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="765" y="590" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 浏览知识库（task2-3） -->
+        <mxCell id="story2-3-1" value="作为用户，我想要查看我创建的知识库，以便管理我的内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="930" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story2-3-2" value="作为用户，我想要查看我参与的知识库，以便访问团队内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="930" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story2-3-3" value="作为访客，我想要查看公开知识库，以便浏览公开内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="930" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 创建文档（task3-1） -->
+        <mxCell id="story3-1-1" value="作为文档作者，我想要在知识库中新建文档，以便开始创作内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-1-2" value="作为文档作者，我想要设置文档标题，以便标识文档内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-1-3" value="作为文档作者，我想要选择父文档，以便构建文档树结构" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-1-4" value="作为文档作者，我想要设置文档可见性，以便控制访问权限" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1120" y="430" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 编辑文档（task3-2） -->
+        <mxCell id="story3-2-1" value="作为文档作者，我想要使用Markdown编辑器，以便格式化文档内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1285" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-2-2" value="作为文档作者，我想要实时预览文档效果，以便查看排版结果" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1285" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-2-3" value="作为文档作者，我想要系统每30秒自动保存草稿，以便防止内容丢失" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1285" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-2-4" value="作为文档作者，我想要恢复草稿内容，以便继续之前的编辑" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1285" y="430" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-2-5" value="作为文档作者，我想要获取编辑锁，以便防止他人同时编辑" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1285" y="510" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-2-6" value="作为文档作者，我想要发布文档，以便让他人查看" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1285" y="590" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 管理文档树（task3-3） -->
+        <mxCell id="story3-3-1" value="作为文档作者，我想要创建子文档，以便组织文档层级" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-3-2" value="作为文档作者，我想要移动文档位置，以便调整文档结构" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-3-3" value="作为文档作者，我想要调整文档顺序，以便优化阅读体验" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-3-4" value="作为用户，我想要查看文档树，以便浏览知识库结构" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1450" y="430" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 版本管理（task3-4） -->
+        <mxCell id="story3-4-1" value="作为文档作者，我想要查看文档的版本历史，以便了解修改记录" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1615" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-4-2" value="作为文档作者，我想要对比两个版本的差异，以便了解具体修改内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1615" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-4-3" value="作为文档作者，我想要回滚到历史版本，以便恢复之前的内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1615" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-4-4" value="作为文档作者，我想要查看版本的编辑者和时间，以便追溯修改历史" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1615" y="430" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-4-5" value="作为文档作者，我想要为版本添加提交说明，以便记录修改原因" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B0B0B0;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="1615" y="510" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 删除文档（task3-5） -->
+        <mxCell id="story3-5-1" value="作为文档作者，我想要删除文档到回收站，以便暂时移除文档" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1780" y="190" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-5-2" value="作为文档作者，我想要从回收站恢复文档，以便撤销删除操作" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1780" y="270" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-5-3" value="作为文档作者，我想要彻底删除文档，以便永久移除内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1780" y="350" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-5-4" value="作为文档作者，我想要在彻底删除前看到二次确认，以便防止误删" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1780" y="430" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-5-5" value="作为文档作者，我想要系统自动清理本地文件，以便释放存储空间" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1780" y="510" width="140" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story3-5-6" value="作为用户，我想要回收站文档保留30天，以便有足够时间恢复" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1780" y="590" width="140" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 实时协作（task4-1） -->
+        <mxCell id="story4-1-1" value="作为团队成员，我想要与他人同时编辑文档，以便实时协作" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1960" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story4-1-2" value="作为团队成员，我想要看到其他协作者的光标位置，以便了解他们在编辑哪里" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1960" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story4-1-3" value="作为团队成员，我想要看到其他协作者的选中文本，以便了解他们关注的内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1960" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story4-1-4" value="作为团队成员，我想要系统自动合并并发编辑，以便避免冲突" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1960" y="430" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story4-1-5" value="作为团队成员，我想要在冲突时看到提示，以便手动解决冲突" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1960" y="510" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story4-1-6" value="作为团队成员，我想要看到在线协作者列表，以便了解谁在编辑" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="1960" y="590" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 编辑锁管理（task4-2） -->
+        <mxCell id="story4-2-1" value="作为文档作者，我想要获取编辑锁，以便独占编辑文档" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2125" y="190" width="155" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story4-2-2" value="作为文档作者，我想要释放编辑锁，以便让他人编辑" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2125" y="270" width="155" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story4-2-3" value="作为用户，我想要看到文档被谁锁定，以便了解编辑状态" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2125" y="350" width="155" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story4-2-4" value="作为用户，我想要编辑锁5分钟后自动释放，以便防止长时间占用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2125" y="430" width="155" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 搜索文档（task5-1） -->
+        <mxCell id="story5-1-1" value="作为用户，我想要搜索文档标题，以便快速找到文档" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#82C785;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2320" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story5-1-2" value="作为用户，我想要搜索文档内容，以便找到相关信息" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2320" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story5-1-3" value="作为用户，我想要按知识库筛选搜索结果，以便缩小搜索范围" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2320" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story5-1-4" value="作为用户，我想要看到搜索关键词高亮，以便快速定位内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2320" y="430" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story5-1-5" value="作为用户，我想要搜索结果按相关性排序，以便优先看到最相关的文档" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B0B0B0;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="2320" y="510" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 浏览推荐（task5-2） -->
+        <mxCell id="story5-2-1" value="作为用户，我想要查看最近更新的文档，以便了解最新内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2485" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story5-2-2" value="作为用户，我想要查看最多阅读的文档，以便发现热门内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2485" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story5-2-3" value="作为用户，我想要推荐列表缓存在Redis，以便快速加载" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2485" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 分享文档（task5-3） -->
+        <mxCell id="story5-3-1" value="作为文档作者，我想要生成分享链接，以便分享文档给他人" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2650" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story5-3-2" value="作为文档作者，我想要设置分享链接有效期，以便控制访问时间" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2650" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story5-3-3" value="作为访客，我想要通过分享链接访问文档，以便无需登录查看内容" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2650" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story5-3-4" value="作为文档作者，我想要撤销分享链接，以便停止公开访问" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B0B0B0;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="2650" y="430" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story5-3-5" value="作为文档作者，我想要为分享链接设置密码，以便限制访问" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#B0B0B0;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;fontColor=#FFFFFF;" vertex="1" parent="1">
+          <mxGeometry x="2650" y="510" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 查看操作日志（task6-1） -->
+        <mxCell id="story6-1-1" value="作为系统管理员，我想要查看所有操作日志，以便监控系统使用" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2840" y="190" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story6-1-2" value="作为系统管理员，我想要按时间筛选日志，以便查看特定时段的操作" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2840" y="270" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story6-1-3" value="作为系统管理员，我想要按用户筛选日志，以便追踪用户行为" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2840" y="350" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story6-1-4" value="作为系统管理员，我想要按操作类型筛选日志，以便分析特定操作" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2840" y="430" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story6-1-5" value="作为系统管理员，我想要按IP筛选日志，以便追踪异常访问" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2840" y="510" width="150" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story6-1-6" value="作为系统管理员，我想要分页查看日志，以便浏览大量记录" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="2840" y="590" width="150" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 第三层：用户故事 - 监控系统（task6-2） -->
+        <mxCell id="story6-2-1" value="作为系统管理员，我想要查看登录日志，以便监控账号安全" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="3005" y="190" width="155" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story6-2-2" value="作为系统管理员，我想要查看删除日志，以便追踪内容变更" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="3005" y="270" width="155" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story6-2-3" value="作为系统管理员，我想要查看分享日志，以便监控内容分享" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="3005" y="350" width="155" height="70" as="geometry" />
+        </mxCell>
+        <mxCell id="story6-2-4" value="作为系统管理员，我想要查看权限变更日志，以便监控权限管理" style="rounded=1;whiteSpace=wrap;html=1;fillColor=#F5D76E;strokeColor=none;fontSize=10;align=left;verticalAlign=top;spacingLeft=6;spacingTop=6;" vertex="1" parent="1">
+          <mxGeometry x="3005" y="430" width="155" height="70" as="geometry" />
+        </mxCell>
+
+        <!-- 连接线：活动到任务 -->
+        <mxCell id="line-a1-t1" edge="1" parent="1" source="activity1" target="task1-1" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a1-t2" edge="1" parent="1" source="activity1" target="task1-2" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a1-t3" edge="1" parent="1" source="activity1" target="task1-3" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a2-t1" edge="1" parent="1" source="activity2" target="task2-1" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a2-t2" edge="1" parent="1" source="activity2" target="task2-2" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a2-t3" edge="1" parent="1" source="activity2" target="task2-3" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a3-t1" edge="1" parent="1" source="activity3" target="task3-1" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a3-t2" edge="1" parent="1" source="activity3" target="task3-2" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a3-t3" edge="1" parent="1" source="activity3" target="task3-3" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a3-t4" edge="1" parent="1" source="activity3" target="task3-4" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a3-t5" edge="1" parent="1" source="activity3" target="task3-5" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a4-t1" edge="1" parent="1" source="activity4" target="task4-1" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a4-t2" edge="1" parent="1" source="activity4" target="task4-2" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a5-t1" edge="1" parent="1" source="activity5" target="task5-1" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a5-t2" edge="1" parent="1" source="activity5" target="task5-2" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a5-t3" edge="1" parent="1" source="activity5" target="task5-3" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a6-t1" edge="1" parent="1" source="activity6" target="task6-1" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+        <mxCell id="line-a6-t2" edge="1" parent="1" source="activity6" target="task6-2" style="endArrow=none;html=1;strokeColor=#CCCCCC;strokeWidth=1;">
+          <mxGeometry relative="1" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

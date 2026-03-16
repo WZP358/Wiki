@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mysql -uroot -pwzp -e \"SHOW DATABASES LIKE ''wiki'';\")",
+      "Bash(mvn spring-boot:run)",
+      "Bash(npm run:*)",
+      "Bash(netstat -ano)"
+    ]
+  }
+}

@@ -16,7 +16,9 @@ com\wiki\app\kb\dto\KnowledgeBaseResponse.class
 com\wiki\app\user\dto\UpdateProfileRequest.class
 com\wiki\app\kb\KnowledgeBase.class
 com\wiki\app\collab\CollabWebSocketHandler.class
+com\wiki\app\doc\search\ElasticsearchDocumentSearchService.class
 com\wiki\app\doc\DocumentController.class
+com\wiki\app\dept\DepartmentRepository.class
 com\wiki\app\user\UserRole.class
 com\wiki\app\common\BusinessException.class
 com\wiki\app\doc\search\WikiDocumentSearchRepository.class
@@ -24,6 +26,7 @@ com\wiki\app\doc\dto\DraftResponse.class
 com\wiki\app\doc\dto\DiffLineResponse$DiffLineResponseBuilder.class
 com\wiki\app\user\AuthController.class
 com\wiki\app\doc\DocVisibility.class
+com\wiki\app\doc\DocumentEditLog.class
 com\wiki\app\user\AuthService$ContactType.class
 com\wiki\app\security\RestAuthHandlers.class
 com\wiki\app\log\OperationLogService.class
@@ -38,11 +41,13 @@ com\wiki\app\doc\WikiDocumentRepository.class
 com\wiki\app\kb\dto\CreateKnowledgeBaseRequest.class
 com\wiki\app\user\dto\SendUpdateCodeRequest.class
 com\wiki\app\doc\DocumentService$DocListSupplier.class
+com\wiki\app\doc\DocumentViewLogRepository.class
 com\wiki\app\security\JwtTokenProvider.class
 com\wiki\app\common\BaseEntity.class
 com\wiki\app\config\SchedulingConfig.class
 com\wiki\app\doc\WikiDocument.class
 com\wiki\app\log\OperationLogRepository.class
+com\wiki\app\doc\DocumentEditLogRepository.class
 com\wiki\app\security\JwtAuthenticationFilter.class
 com\wiki\app\mail\VerifyCodeResult.class
 com\wiki\app\WikiBackendApplication.class
@@ -53,11 +58,13 @@ com\wiki\app\user\VerifyCodeService.class
 com\wiki\app\doc\dto\DocumentTreeNode$DocumentTreeNodeBuilder.class
 com\wiki\app\doc\CloudStorageCleanupService.class
 com\wiki\app\admin\dto\OperationLogResponse.class
+com\wiki\app\doc\DocumentLogCleanupScheduler.class
 com\wiki\app\common\ErrorCode.class
 com\wiki\app\doc\DocumentDraftRepository.class
 com\wiki\app\user\dto\UserProfileResponse$UserProfileResponseBuilder.class
 com\wiki\app\doc\DocumentVersion.class
 com\wiki\app\share\ShareLink.class
+com\wiki\app\doc\DocumentViewLog.class
 com\wiki\app\collab\CollabWebSocketConfig.class
 com\wiki\app\kb\KnowledgeBaseController.class
 com\wiki\app\kb\KnowledgeBaseRepository.class
@@ -78,6 +85,7 @@ com\wiki\app\security\CurrentUser.class
 com\wiki\app\doc\dto\DocumentResponse$DocumentResponseBuilder.class
 com\wiki\app\doc\dto\RealtimeDocSnapshot$RealtimeDocSnapshotBuilder.class
 com\wiki\app\log\OperationLog.class
+com\wiki\app\dept\Department.class
 com\wiki\app\doc\dto\DocumentVersionResponse$DocumentVersionResponseBuilder.class
 com\wiki\app\sms\SmsService.class
 com\wiki\app\user\AdminInitializer.class
@@ -107,6 +115,7 @@ com\wiki\app\kb\KnowledgeBaseMemberRepository.class
 com\wiki\app\user\dto\LoginRequest.class
 com\wiki\app\config\JacksonConfig.class
 com\wiki\app\collab\CollabParticipant.class
+com\wiki\app\doc\search\IDocumentSearchService.class
 com\wiki\app\collab\OtTextOperation.class
 com\wiki\app\doc\DocumentVersionRepository.class
 com\wiki\app\doc\dto\DocumentTreeNode.class

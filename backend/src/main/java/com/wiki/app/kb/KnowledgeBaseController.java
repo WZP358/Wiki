@@ -32,16 +32,4 @@ public class KnowledgeBaseController {
         return ApiResponse.ok(knowledgeBaseService.listMine(SecurityUtils.currentUser()));
     }
 
-    @PostMapping("/{kbId}/members")
-    public ApiResponse<MemberResponse> inviteMember(@PathVariable Long kbId,
-                                                    @Valid @RequestBody InviteMemberRequest request,
-                                                    HttpServletRequest httpRequest) {
-        CurrentUser user = SecurityUtils.currentUser();
-        return ApiResponse.ok(knowledgeBaseService.inviteOrUpdateMember(kbId, request, user, IpUtils.resolve(httpRequest)));
-    }
-
-    @GetMapping("/{kbId}/members")
-    public ApiResponse<List<MemberResponse>> listMembers(@PathVariable Long kbId) {
-        return ApiResponse.ok(knowledgeBaseService.listMembers(kbId, SecurityUtils.currentUser()));
-    }
 }

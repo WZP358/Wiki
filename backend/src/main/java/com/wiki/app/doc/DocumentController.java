@@ -33,8 +33,11 @@ public class DocumentController {
     }
 
     @GetMapping("/{docId}")
-    public ApiResponse<DocumentResponse> get(@PathVariable Long docId) {
-        return ApiResponse.ok(documentService.get(docId, SecurityUtils.currentUser()));
+    public ApiResponse<DocumentResponse> get(@PathVariable Long docId, HttpServletRequest httpRequest) {
+        CurrentUser user = SecurityUtils.currentUser();
+        String ip = IpUtils.resolve(httpRequest);
+        String userAgent = httpRequest.getHeader("User-Agent");
+        return ApiResponse.ok(documentService.get(docId, user, ip, userAgent));
     }
 
     @PutMapping("/{docId}")

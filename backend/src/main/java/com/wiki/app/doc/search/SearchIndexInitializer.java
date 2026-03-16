@@ -17,11 +17,11 @@ public class SearchIndexInitializer {
 
     private final AppProperties appProperties;
     private final WikiDocumentRepository documentRepository;
-    private final DocumentSearchService documentSearchService;
+    private final IDocumentSearchService documentSearchService;
 
     public SearchIndexInitializer(AppProperties appProperties,
                                   WikiDocumentRepository documentRepository,
-                                  DocumentSearchService documentSearchService) {
+                                  IDocumentSearchService documentSearchService) {
         this.appProperties = appProperties;
         this.documentRepository = documentRepository;
         this.documentSearchService = documentSearchService;

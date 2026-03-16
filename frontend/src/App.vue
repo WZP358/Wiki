@@ -1,17 +1,52 @@
 ﻿<template>
   <div class="app-shell">
-    <aside v-if="!isPublicRoute" class="side panel">
-      <h2>Wiki</h2>
-      <router-link to="/">工作台</router-link>
-      <router-link to="/profile">个人中心</router-link>
-      <router-link to="/recycle">回收站</router-link>
-      <router-link v-if="auth.isAdmin" to="/admin/logs">管理日志</router-link>
-      <button class="btn" @click="toggleTheme">主题：{{ theme.mode }}</button>
-      <button class="btn" @click="logout">退出登录</button>
+    <aside v-if="!isPublicRoute" class="sidebar">
+      <div class="sidebar-header">
+        <div class="logo">
+          <svg width="24" height="24" viewBox="0 0 24 24" fill="none">
+            <path d="M12 2L2 7L12 12L22 7L12 2Z" fill="currentColor" opacity="0.3"/>
+            <path d="M2 17L12 22L22 17" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            <path d="M2 12L12 17L22 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          <span class="logo-text">Wiki</span>
+        </div>
+      </div>
+
+      <nav class="sidebar-nav">
+        <router-link to="/" class="nav-item">
+          <span class="nav-icon">📊</span>
+          <span>工作台</span>
+        </router-link>
+        <router-link to="/profile" class="nav-item">
+          <span class="nav-icon">👤</span>
+          <span>个人中心</span>
+        </router-link>
+        <router-link to="/recycle" class="nav-item">
+          <span class="nav-icon">🗑️</span>
+          <span>回收站</span>
+        </router-link>
+        <router-link v-if="auth.isAdmin" to="/admin/logs" class="nav-item">
+          <span class="nav-icon">📋</span>
+          <span>管理日志</span>
+        </router-link>
+      </nav>
+
+      <div class="sidebar-footer">
+        <button class="btn-text theme-toggle" @click="toggleTheme" :title="`当前主题: ${theme.mode}`">
+          <span v-if="theme.mode === 'light'">☀️</span>
+          <span v-else-if="theme.mode === 'dark'">🌙</span>
+          <span v-else>🔄</span>
+        </button>
+        <button class="btn-text logout-btn" @click="logout" title="退出登录">
+          <span>🚪</span>
+        </button>
+      </div>
     </aside>
-    <main :class="['main', { full: isPublicRoute }]">
+
+    <main :class="['main-content', { full: isPublicRoute }]">
       <router-view />
     </main>
+
     <LoadingMask />
     <ErrorDialog />
   </div>
@@ -49,54 +84,130 @@ function logout() {
 <style scoped>
 .app-shell {
   min-height: 100vh;
-  display: grid;
-  grid-template-columns: 220px 1fr;
-  gap: 12px;
-  padding: 12px;
+  display: flex;
 }
 
-.side {
-  padding: 14px;
+.sidebar {
+  width: 240px;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
   display: flex;
   flex-direction: column;
-  gap: 8px;
-  height: calc(100vh - 24px);
-  position: sticky;
-  top: 12px;
+  position: fixed;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  z-index: 100;
 }
 
-.side h2 {
-  margin: 0 0 6px;
+.sidebar-header {
+  padding: 20px 16px;
+  border-bottom: 1px solid var(--line);
 }
 
-.side a {
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--brand);
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.logo svg {
+  flex-shrink: 0;
+}
+
+.logo-text {
   color: var(--text);
-  text-decoration: none;
-  padding: 8px 10px;
-  border-radius: 8px;
 }
 
-.side a.router-link-exact-active {
-  background: var(--brand-soft);
+.sidebar-nav {
+  flex: 1;
+  padding: 12px 8px;
+  overflow-y: auto;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 12px;
+  margin-bottom: 4px;
+  border-radius: var(--radius);
+  color: var(--text-secondary);
+  text-decoration: none;
+  font-size: 14px;
+  font-weight: 500;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.nav-item:hover {
+  background: var(--line-light);
+  color: var(--text);
+}
+
+.nav-item.router-link-active {
+  background: var(--brand-light);
   color: var(--brand);
 }
 
-.main {
-  min-width: 0;
+.nav-icon {
+  font-size: 18px;
+  width: 20px;
+  text-align: center;
 }
 
-.main.full {
-  grid-column: 1 / -1;
+.sidebar-footer {
+  padding: 12px 8px;
+  border-top: 1px solid var(--line);
+  display: flex;
+  gap: 8px;
+  justify-content: center;
+}
+
+.theme-toggle,
+.logout-btn {
+  padding: 8px;
+  font-size: 18px;
+  border-radius: var(--radius);
+}
+
+.main-content {
+  flex: 1;
+  margin-left: 240px;
+  min-width: 0;
+  padding: 24px;
+}
+
+.main-content.full {
+  margin-left: 0;
 }
 
 @media (max-width: 900px) {
-  .app-shell {
-    grid-template-columns: 1fr;
+  .sidebar {
+    width: 200px;
   }
 
-  .side {
-    position: static;
-    height: auto;
+  .main-content {
+    margin-left: 200px;
+    padding: 16px;
+  }
+}
+
+@media (max-width: 768px) {
+  .sidebar {
+    transform: translateX(-100%);
+    transition: transform 0.3s ease;
+  }
+
+  .sidebar.open {
+    transform: translateX(0);
+  }
+
+  .main-content {
+    margin-left: 0;
   }
 }
 </style>

@@ -32,7 +32,7 @@ public class ShareService {
 
     @Transactional
     public ShareResponse createDocShare(Long docId, CurrentUser user, String ip) {
-        documentService.get(docId, user);
+        documentService.get(docId, user, ip, null);
 
         ShareLink link = new ShareLink();
         link.setId(idGenerator.nextId());

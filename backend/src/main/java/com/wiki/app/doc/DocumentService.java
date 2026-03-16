@@ -5,12 +5,16 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wiki.app.common.BusinessException;
 import com.wiki.app.common.ErrorCode;
 import com.wiki.app.common.SnowflakeIdGenerator;
-import com.wiki.app.doc.search.DocumentSearchService;
+import com.wiki.app.doc.search.IDocumentSearchService;
 import com.wiki.app.doc.dto.*;
+import com.wiki.app.kb.KnowledgeBase;
+import com.wiki.app.kb.KnowledgeBaseRepository;
 import com.wiki.app.kb.KnowledgeBaseService;
-import com.wiki.app.kb.MemberRole;
+import com.wiki.app.kb.KnowledgeBaseType;
 import com.wiki.app.log.OperationLogService;
 import com.wiki.app.security.CurrentUser;
+import com.wiki.app.user.UserAccount;
+import com.wiki.app.user.UserRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -33,7 +37,11 @@ public class DocumentService {
     private final WikiDocumentRepository documentRepository;
     private final DocumentVersionRepository versionRepository;
     private final DocumentDraftRepository draftRepository;
+    private final DocumentViewLogRepository viewLogRepository;
+    private final DocumentEditLogRepository editLogRepository;
     private final KnowledgeBaseService knowledgeBaseService;
+    private final KnowledgeBaseRepository knowledgeBaseRepository;
+    private final UserRepository userRepository;
     private final MarkdownService markdownService;
     private final SnowflakeIdGenerator idGenerator;
     private final StringRedisTemplate redisTemplate;
@@ -41,12 +49,16 @@ public class DocumentService {
     private final OperationLogService operationLogService;
     private final AsyncCleanupService asyncCleanupService;
     private final LocalDocStorageService localDocStorageService;
-    private final DocumentSearchService documentSearchService;
+    private final IDocumentSearchService documentSearchService;
 
     public DocumentService(WikiDocumentRepository documentRepository,
                            DocumentVersionRepository versionRepository,
                            DocumentDraftRepository draftRepository,
+                           DocumentViewLogRepository viewLogRepository,
+                           DocumentEditLogRepository editLogRepository,
                            KnowledgeBaseService knowledgeBaseService,
+                           KnowledgeBaseRepository knowledgeBaseRepository,
+                           UserRepository userRepository,
                            MarkdownService markdownService,
                            SnowflakeIdGenerator idGenerator,
                            StringRedisTemplate redisTemplate,
@@ -54,11 +66,15 @@ public class DocumentService {
                            OperationLogService operationLogService,
                            AsyncCleanupService asyncCleanupService,
                            LocalDocStorageService localDocStorageService,
-                           DocumentSearchService documentSearchService) {
+                           IDocumentSearchService documentSearchService) {
         this.documentRepository = documentRepository;
         this.versionRepository = versionRepository;
         this.draftRepository = draftRepository;
+        this.viewLogRepository = viewLogRepository;
+        this.editLogRepository = editLogRepository;
         this.knowledgeBaseService = knowledgeBaseService;
+        this.knowledgeBaseRepository = knowledgeBaseRepository;
+        this.userRepository = userRepository;
         this.markdownService = markdownService;
         this.idGenerator = idGenerator;
         this.redisTemplate = redisTemplate;
@@ -91,6 +107,10 @@ public class DocumentService {
         invalidateListCache(doc.getKbId());
         cacheHtml(doc);
         documentSearchService.upsert(doc);
+
+        // 记录修改日志
+        logEdit(doc, user, "CREATE", null, doc.getTitle(), 0, doc.getMarkdownContent().length(), ip, "Create document");
+
         operationLogService.record(user.getUserId(), user.getUsername(), "CREATE_DOC", "DOC", doc.getId().toString(), ip, doc.getTitle());
         return toResponse(doc);
     }
@@ -110,13 +130,16 @@ public class DocumentService {
     }
 
     @Transactional
-    public DocumentResponse get(Long docId, CurrentUser user) {
+    public DocumentResponse get(Long docId, CurrentUser user, String ip, String userAgent) {
         WikiDocument doc = loadActive(docId);
         ensureReadable(doc, user);
 
         doc.setViewCount(doc.getViewCount() + 1);
         documentRepository.save(doc);
         redisTemplate.delete(hotKey(doc.getKbId()));
+
+        // 记录查看日志
+        logView(doc, user, ip, userAgent);
 
         String cachedHtml = redisTemplate.opsForValue().get(htmlKey(doc.getId()));
         if (cachedHtml != null) {
@@ -135,6 +158,9 @@ public class DocumentService {
         if (request.getBaseVersion() != null && !request.getBaseVersion().equals(doc.getVersionNo())) {
             throw new BusinessException(ErrorCode.DOC_CONFLICT, "Document has been updated by another user. Sync latest content before submitting");
         }
+
+        String oldTitle = doc.getTitle();
+        int oldLength = doc.getMarkdownContent().length();
 
         if (request.getTitle() != null) {
             doc.setTitle(request.getTitle());
@@ -157,6 +183,9 @@ public class DocumentService {
         cacheHtml(doc);
         documentSearchService.upsert(doc);
 
+        // 记录修改日志
+        logEdit(doc, user, "UPDATE", oldTitle, doc.getTitle(), oldLength, doc.getMarkdownContent().length(), ip, request.getCommitMessage());
+
         operationLogService.record(user.getUserId(), user.getUsername(), "UPDATE_DOC", "DOC", doc.getId().toString(), ip, doc.getTitle());
         return toResponse(doc);
     }
@@ -165,6 +194,10 @@ public class DocumentService {
     public void delete(Long docId, CurrentUser user, String ip) {
         WikiDocument doc = loadActive(docId);
         ensureEditable(doc, user);
+
+        // 记录删除日志
+        logEdit(doc, user, "DELETE", doc.getTitle(), null, doc.getMarkdownContent().length(), 0, ip, "Delete document");
+
         doc.setDeletedAt(LocalDateTime.now());
         documentRepository.save(doc);
         invalidateListCache(doc.getKbId());
@@ -416,25 +449,64 @@ public class DocumentService {
     }
 
     private boolean canRead(WikiDocument doc, CurrentUser user) {
-        if (user.isAdmin() || doc.getOwnerId().equals(user.getUserId()) || doc.getVisibility() == DocVisibility.PUBLIC) {
+        // 管理员或文档创建者可读
+        if (user.isAdmin() || doc.getOwnerId().equals(user.getUserId())) {
             return true;
         }
-        MemberRole role = knowledgeBaseService.getMemberRole(doc.getKbId(), user.getUserId());
-        if (doc.getVisibility() == DocVisibility.TEAM) {
-            return role != null;
+        // 公开文档所有人可读
+        if (doc.getVisibility() == DocVisibility.PUBLIC) {
+            return true;
         }
-        return role == MemberRole.ADMIN;
+        // 私有文档：检查知识库权限
+        KnowledgeBase kb = knowledgeBaseRepository.findById(doc.getKbId()).orElse(null);
+        if (kb == null) {
+            return false;
+        }
+        // 公司公开知识库中的文档，所有人可读
+        if (kb.getType() == KnowledgeBaseType.COMPANY) {
+            return true;
+        }
+        // 部门知识库中的文档，同部门成员可读
+        if (kb.getType() == KnowledgeBaseType.DEPARTMENT) {
+            UserAccount currentUser = userRepository.findById(user.getUserId()).orElse(null);
+            UserAccount kbOwner = userRepository.findById(kb.getOwnerId()).orElse(null);
+            if (currentUser != null && kbOwner != null && currentUser.getDepartmentId() != null) {
+                return currentUser.getDepartmentId().equals(kbOwner.getDepartmentId());
+            }
+        }
+        // 私有知识库中的文档，仅创建者可读
+        return kb.getOwnerId().equals(user.getUserId());
     }
 
     private void ensureEditable(WikiDocument doc, CurrentUser user) {
+        // 管理员或文档创建者可编辑
         if (user.isAdmin() || doc.getOwnerId().equals(user.getUserId())) {
             return;
         }
-        MemberRole role = knowledgeBaseService.getMemberRole(doc.getKbId(), user.getUserId());
-        if (role == MemberRole.EDITOR || role == MemberRole.ADMIN) {
+        // 检查知识库权限
+        KnowledgeBase kb = knowledgeBaseRepository.findById(doc.getKbId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识库不存在"));
+        // 公司公开知识库中的文档，所有人可编辑
+        if (kb.getType() == KnowledgeBaseType.COMPANY) {
             return;
         }
-        throw new BusinessException(ErrorCode.FORBIDDEN, "No permission to edit this document");
+        // 部门知识库中的文档，同部门成员可编辑
+        if (kb.getType() == KnowledgeBaseType.DEPARTMENT) {
+            UserAccount currentUser = userRepository.findById(user.getUserId()).orElse(null);
+            UserAccount kbOwner = userRepository.findById(kb.getOwnerId()).orElse(null);
+            if (currentUser != null && kbOwner != null && currentUser.getDepartmentId() != null) {
+                if (currentUser.getDepartmentId().equals(kbOwner.getDepartmentId())) {
+                    return;
+                }
+            }
+        }
+        // 私有知识库中的文档，仅创建者可编辑
+        if (!kb.getOwnerId().equals(user.getUserId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无编辑权限");
+        }
+        if (!kb.getOwnerId().equals(user.getUserId())) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "无编辑权限");
+        }
     }
 
     private void snapshot(WikiDocument doc, CurrentUser user, String message) {
@@ -474,14 +546,33 @@ public class DocumentService {
     }
 
     private boolean canReadFromResponse(DocumentResponse doc, Long kbId, CurrentUser user) {
-        if (user.isAdmin() || doc.getVisibility() == DocVisibility.PUBLIC || doc.getOwnerId().equals(user.getUserId())) {
+        // 管理员或文档创建者可读
+        if (user.isAdmin() || doc.getOwnerId().equals(user.getUserId())) {
             return true;
         }
-        MemberRole role = knowledgeBaseService.getMemberRole(kbId, user.getUserId());
-        if (doc.getVisibility() == DocVisibility.TEAM) {
-            return role != null;
+        // 公开文档所有人可读
+        if (doc.getVisibility() == DocVisibility.PUBLIC) {
+            return true;
         }
-        return role == MemberRole.ADMIN;
+        // 私有文档：检查知识库权限
+        KnowledgeBase kb = knowledgeBaseRepository.findById(kbId).orElse(null);
+        if (kb == null) {
+            return false;
+        }
+        // 公司公开知识库中的文档，所有人可读
+        if (kb.getType() == KnowledgeBaseType.COMPANY) {
+            return true;
+        }
+        // 部门知识库中的文档，同部门成员可读
+        if (kb.getType() == KnowledgeBaseType.DEPARTMENT) {
+            UserAccount currentUser = userRepository.findById(user.getUserId()).orElse(null);
+            UserAccount kbOwner = userRepository.findById(kb.getOwnerId()).orElse(null);
+            if (currentUser != null && kbOwner != null && currentUser.getDepartmentId() != null) {
+                return currentUser.getDepartmentId().equals(kbOwner.getDepartmentId());
+            }
+        }
+        // 私有知识库中的文档，仅创建者可读
+        return kb.getOwnerId().equals(user.getUserId());
     }
 
     private void invalidateListCache(Long kbId) {
@@ -650,5 +741,35 @@ public class DocumentService {
             }
         }
         return normalized;
+    }
+
+    private void logView(WikiDocument doc, CurrentUser user, String ip, String userAgent) {
+        DocumentViewLog log = new DocumentViewLog();
+        log.setId(idGenerator.nextId());
+        log.setDocId(doc.getId());
+        log.setUserId(user.getUserId());
+        log.setUsername(user.getUsername());
+        log.setIp(ip);
+        log.setUserAgent(userAgent);
+        log.setCreatedAt(LocalDateTime.now());
+        viewLogRepository.save(log);
+    }
+
+    private void logEdit(WikiDocument doc, CurrentUser user, String action, String titleBefore, String titleAfter,
+                         int contentLengthBefore, int contentLengthAfter, String ip, String commitMessage) {
+        DocumentEditLog log = new DocumentEditLog();
+        log.setId(idGenerator.nextId());
+        log.setDocId(doc.getId());
+        log.setUserId(user.getUserId());
+        log.setUsername(user.getUsername());
+        log.setAction(action);
+        log.setTitleBefore(titleBefore);
+        log.setTitleAfter(titleAfter);
+        log.setContentLengthBefore(contentLengthBefore);
+        log.setContentLengthAfter(contentLengthAfter);
+        log.setIp(ip);
+        log.setCommitMessage(commitMessage);
+        log.setCreatedAt(LocalDateTime.now());
+        editLogRepository.save(log);
     }
 }
