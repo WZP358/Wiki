@@ -32,4 +32,8 @@ public class KnowledgeBaseController {
         return ApiResponse.ok(knowledgeBaseService.listMine(SecurityUtils.currentUser()));
     }
 
-}
+    @GetMapping("/user/{userId}/public")
+    public ApiResponse<List<KnowledgeBaseResponse>> publicByUser(@PathVariable Long userId) {
+        return ApiResponse.ok(knowledgeBaseService.listPublicByUser(userId));
+    }
+

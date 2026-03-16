@@ -84,6 +84,15 @@ public class KnowledgeBaseService {
         return responses;
     }
 
+    public List<KnowledgeBaseResponse> listPublicByUser(Long userId) {
+        List<KnowledgeBase> publicKbs = kbRepository.findPublicByUserId(userId);
+        List<KnowledgeBaseResponse> responses = new ArrayList<>();
+        for (KnowledgeBase kb : publicKbs) {
+            responses.add(toResponse(kb, "VIEWER"));
+        }
+        return responses;
+    }
+
     public void ensureKbVisible(Long kbId, CurrentUser user) {
         KnowledgeBase kb = kbRepository.findById(kbId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识库不存在"));

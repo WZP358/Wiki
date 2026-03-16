@@ -2,6 +2,13 @@
   <section class="panel page">
     <h2>个人中心</h2>
     <div class="form">
+      <label>用户ID</label>
+      <div class="user-id-row">
+        <input class="input" :value="auth.user?.id" disabled />
+        <button class="btn btn-sm" @click="copyUserId">复制</button>
+      </div>
+      <p class="hint">其他用户可以通过此ID搜索你的公开知识库</p>
+
       <label>用户名</label>
       <input class="input" :value="auth.user?.username" disabled />
 
@@ -71,6 +78,14 @@ async function save() {
   form.phoneCode = ''
   tip.value = '保存成功'
 }
+
+function copyUserId() {
+  const userId = auth.user?.id
+  if (userId) {
+    navigator.clipboard.writeText(String(userId))
+    tip.value = '用户ID已复制到剪贴板'
+  }
+}
 </script>
 
 <style scoped>
@@ -93,5 +108,23 @@ async function save() {
 .tip {
   margin: 0;
   color: var(--brand);
+}
+
+.user-id-row {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.hint {
+  margin: -4px 0 8px 0;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
 }
 </style>

@@ -18,7 +18,8 @@ export const kbApi = {
   mine: () => http.get('/kbs/mine'),
   create: data => http.post('/kbs', data),
   members: kbId => http.get(`/kbs/${kbId}/members`),
-  updateMember: (kbId, data) => http.post(`/kbs/${kbId}/members`, data)
+  updateMember: (kbId, data) => http.post(`/kbs/${kbId}/members`, data),
+  publicByUser: userId => http.get(`/kbs/user/${userId}/public`)
 }
 
 export const docApi = {
@@ -50,4 +51,11 @@ export const shareApi = {
 
 export const adminApi = {
   logs: (page = 0, size = 20) => http.get('/admin/logs', { params: { page, size } })
+}
+
+export const favoriteApi = {
+  add: docId => http.post(`/favorites/docs/${docId}`),
+  remove: docId => http.delete(`/favorites/docs/${docId}`),
+  mine: kbId => http.get('/favorites/mine', { params: kbId ? { kbId } : {} }),
+  check: docId => http.get(`/favorites/check/${docId}`)
 }
