@@ -18,15 +18,18 @@
           <h4>文档目录</h4>
           <div v-if="loading" class="empty">加载中...</div>
           <div v-else-if="tree.length === 0" class="empty">暂无文档</div>
-          <ul v-else class="tree-list">
-            <TreeNode
+          <div v-else class="tree-list">
+            <DocTreeItem
               v-for="node in tree"
               :key="node.id"
               :node="node"
               :level="0"
+              :active-id="activeDocId"
+              :expanded-ids="expandedIds"
+              @toggle="toggleNode"
               @open="handleOpen"
             />
-          </ul>
+          </div>
         </aside>
       </div>
     </div>
@@ -34,18 +37,88 @@
 </template>
 
 <script setup>
-import { onMounted, watch, ref } from 'vue'
+import { onMounted, ref, watch } from 'vue'
 import { docApi } from '../api/modules'
+import DocTreeItem from './DocTreeItem.vue'
 
 const props = defineProps({
   visible: { type: Boolean, default: false },
-  kb: { type: Object, default: null }
+  kb: { type: Object, default: null },
+  activeDocId: { type: [String, Number], default: '' }
 })
 
 const emit = defineEmits(['close', 'open-doc'])
 
 const tree = ref([])
 const loading = ref(false)
+const expandedIds = ref(new Set())
+
+function storageKey() {
+  return `kb-doc-tree-expanded:${String(props.kb?.id || '')}`
+}
+
+function loadExpandedState() {
+  expandedIds.value = new Set()
+  if (!props.kb?.id) return
+  try {
+    const raw = localStorage.getItem(storageKey())
+    if (!raw) return
+    const arr = JSON.parse(raw)
+    if (Array.isArray(arr)) {
+      expandedIds.value = new Set(arr.map(String))
+    }
+  } catch (e) {
+    // ignore
+  }
+}
+
+function saveExpandedState() {
+  if (!props.kb?.id) return
+  try {
+    localStorage.setItem(storageKey(), JSON.stringify(Array.from(expandedIds.value)))
+  } catch (e) {
+    // ignore
+  }
+}
+
+function toggleNode(id) {
+  const key = String(id)
+  const next = new Set(expandedIds.value)
+  if (next.has(key)) {
+    next.delete(key)
+  } else {
+    next.add(key)
+  }
+  expandedIds.value = next
+  saveExpandedState()
+}
+
+function expandToActive() {
+  const target = String(props.activeDocId || '')
+  if (!target || !Array.isArray(tree.value) || tree.value.length === 0) return
+
+  const next = new Set(expandedIds.value)
+
+  const dfs = (node) => {
+    if (!node) return false
+    if (String(node.id) === target) return true
+    const children = node.children || []
+    for (const child of children) {
+      if (dfs(child)) {
+        next.add(String(node.id))
+        return true
+      }
+    }
+    return false
+  }
+
+  for (const root of tree.value) {
+    dfs(root)
+  }
+
+  expandedIds.value = next
+  saveExpandedState()
+}
 
 async function loadTree() {
   if (!props.kb?.id) {
@@ -55,6 +128,12 @@ async function loadTree() {
   loading.value = true
   try {
     tree.value = await docApi.tree(props.kb.id)
+    // 默认展开第一层（仅在没有存储状态时）
+    if (expandedIds.value.size === 0 && Array.isArray(tree.value)) {
+      tree.value.forEach(n => expandedIds.value.add(String(n.id)))
+      saveExpandedState()
+    }
+    expandToActive()
   } finally {
     loading.value = false
   }
@@ -65,61 +144,19 @@ function handleOpen(node) {
 }
 
 watch(
-  () => props.visible,
-  (v) => {
-    if (v) {
-      loadTree()
-    }
+  () => [props.visible, props.kb?.id],
+  ([visible]) => {
+    if (props.kb?.id) loadExpandedState()
+    if (visible) loadTree()
   }
 )
 
 onMounted(() => {
   if (props.visible) {
+    loadExpandedState()
     loadTree()
   }
 })
-</script>
-
-<script>
-// 内联递归组件
-export default {
-  name: 'KbDocsDialog',
-  components: {
-    TreeNode: {
-      name: 'TreeNode',
-      props: {
-        node: { type: Object, required: true },
-        level: { type: Number, default: 0 }
-      },
-      emits: ['open'],
-      methods: {
-        open() {
-          this.$emit('open', this.node)
-        }
-      },
-      template: `
-        <li>
-          <div
-            class="tree-item"
-            :style="{ paddingLeft: 12 + level * 16 + 'px' }"
-            @click="open"
-          >
-            <span class="tree-title">{{ node.title }}</span>
-          </div>
-          <ul v-if="node.children && node.children.length" class="tree-children">
-            <TreeNode
-              v-for="child in node.children"
-              :key="child.id"
-              :node="child"
-              :level="level + 1"
-              @open="$emit('open', $event)"
-            />
-          </ul>
-        </li>
-      `
-    }
-  }
-}
 </script>
 
 <style scoped>
@@ -206,34 +243,6 @@ export default {
 }
 
 .tree-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-}
-
-.tree-item {
-  height: 30px;
-  display: flex;
-  align-items: center;
-  cursor: pointer;
-  border-radius: 6px;
-  transition: background 0.2s;
-}
-
-.tree-item:hover {
-  background: var(--line-light);
-}
-
-.tree-title {
-  font-size: 13px;
-  color: var(--text);
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.tree-children {
-  list-style: none;
   margin: 0;
   padding: 0;
 }

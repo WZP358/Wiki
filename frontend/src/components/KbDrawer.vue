@@ -1,5 +1,5 @@
 <template>
-  <div class="kb-drawer" :class="{ open: visible }">
+  <div class="kb-drawer" :class="{ open: visible }" @click="$emit('close')">
     <div class="kb-drawer-inner" @click.stop>
       <header class="kb-drawer-header">
         <div class="kb-title">
@@ -29,6 +29,9 @@
           :node="node"
           :level="0"
           :close-signal="closeSignal"
+          :active-id="activeDocId"
+          :expanded-ids="expandedIds"
+          @toggle="toggleNode"
           @open="$emit('open-doc', $event)"
           @rename="$emit('rename-doc', $event)"
           @delete="$emit('delete-doc', $event)"
@@ -49,7 +52,8 @@ import DocTreeItem from './DocTreeItem.vue'
 const props = defineProps({
   visible: { type: Boolean, default: false },
   kbId: { type: [String, Number], default: '' },
-  closeSignal: { type: Number, default: 0 }
+  closeSignal: { type: Number, default: 0 },
+  activeDocId: { type: [String, Number], default: '' }
 })
 
 defineEmits([
@@ -67,6 +71,74 @@ defineEmits([
 const kb = ref(null)
 const tree = ref([])
 const loading = ref(false)
+const expandedIds = ref(new Set())
+
+function storageKey() {
+  return `kb-doc-tree-expanded:${String(props.kbId || '')}`
+}
+
+function loadExpandedState() {
+  expandedIds.value = new Set()
+  if (!props.kbId) return
+  try {
+    const raw = localStorage.getItem(storageKey())
+    if (!raw) return
+    const arr = JSON.parse(raw)
+    if (Array.isArray(arr)) {
+      expandedIds.value = new Set(arr.map(String))
+    }
+  } catch (e) {
+    // ignore corrupted storage
+  }
+}
+
+function saveExpandedState() {
+  if (!props.kbId) return
+  try {
+    localStorage.setItem(storageKey(), JSON.stringify(Array.from(expandedIds.value)))
+  } catch (e) {
+    // ignore
+  }
+}
+
+function toggleNode(id) {
+  const key = String(id)
+  const next = new Set(expandedIds.value)
+  if (next.has(key)) {
+    next.delete(key)
+  } else {
+    next.add(key)
+  }
+  expandedIds.value = next
+  saveExpandedState()
+}
+
+function expandToActive() {
+  const target = String(props.activeDocId || '')
+  if (!target || !Array.isArray(tree.value) || tree.value.length === 0) return
+
+  const next = new Set(expandedIds.value)
+
+  const dfs = (node) => {
+    if (!node) return false
+    if (String(node.id) === target) return true
+    const children = node.children || []
+    for (const child of children) {
+      if (dfs(child)) {
+        next.add(String(node.id))
+        return true
+      }
+    }
+    return false
+  }
+
+  for (const root of tree.value) {
+    dfs(root)
+  }
+
+  expandedIds.value = next
+  saveExpandedState()
+}
 
 function getKbClass(type) {
   const map = {
@@ -83,6 +155,12 @@ async function load() {
   try {
     kb.value = await kbApi.get(props.kbId)
     tree.value = await docApi.tree(props.kbId)
+    // 默认展开第一层（仅在没有存储状态时）
+    if (expandedIds.value.size === 0 && Array.isArray(tree.value)) {
+      tree.value.forEach(n => expandedIds.value.add(String(n.id)))
+      saveExpandedState()
+    }
+    expandToActive()
   } finally {
     loading.value = false
   }
@@ -91,6 +169,9 @@ async function load() {
 watch(
   () => [props.visible, props.kbId],
   ([v]) => {
+    if (props.kbId) {
+      loadExpandedState()
+    }
     if (v && props.kbId) load()
   }
 )
@@ -105,21 +186,25 @@ onMounted(() => {
   position: fixed;
   top: 0;
   bottom: 0;
-  left: var(--sidebar-w, 240px);
-  width: var(--drawer-w, 320px);
-  transform: translateX(-100%);
-  transition: transform 0.22s ease, left 0.3s ease;
+  left: 0;
+  right: 0;
+  width: 100vw;
+  background: transparent;
+  opacity: 0;
+  transition: opacity 0.16s ease;
   z-index: 900;
   pointer-events: none;
 }
 
 .kb-drawer.open {
-  transform: translateX(0);
+  opacity: 1;
   pointer-events: auto;
 }
 
 .kb-drawer-inner {
   height: 100%;
+  width: var(--drawer-w, 320px);
+  margin-left: var(--sidebar-w, 240px);
   background: var(--panel);
   border-right: 1px solid var(--line);
   box-shadow: 12px 0 24px rgba(15, 23, 42, 0.12);

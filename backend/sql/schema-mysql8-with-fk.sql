@@ -113,6 +113,28 @@ CREATE TABLE IF NOT EXISTS documents (
     ON DELETE RESTRICT ON UPDATE RESTRICT
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
 
+CREATE TABLE IF NOT EXISTS favorite_documents (
+  id         BIGINT      NOT NULL AUTO_INCREMENT,
+  user_id    BIGINT      NOT NULL,
+  kb_id      BIGINT      NOT NULL,
+  doc_id     BIGINT      NOT NULL,
+  created_at DATETIME(6) NOT NULL,
+  updated_at DATETIME(6) NOT NULL,
+  deleted_at DATETIME(6) NULL,
+  PRIMARY KEY (id),
+  UNIQUE KEY idx_favorite_user_doc (user_id, doc_id),
+  KEY idx_favorite_user_kb (user_id, kb_id),
+  CONSTRAINT fk_fav_user
+    FOREIGN KEY (user_id) REFERENCES users(id)
+    ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT fk_fav_kb
+    FOREIGN KEY (kb_id) REFERENCES knowledge_bases(id)
+    ON DELETE CASCADE ON UPDATE RESTRICT,
+  CONSTRAINT fk_fav_doc
+    FOREIGN KEY (doc_id) REFERENCES documents(id)
+    ON DELETE CASCADE ON UPDATE RESTRICT
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci;
+
 CREATE TABLE IF NOT EXISTS document_versions (
   id               BIGINT       NOT NULL,
   doc_id           BIGINT       NOT NULL,

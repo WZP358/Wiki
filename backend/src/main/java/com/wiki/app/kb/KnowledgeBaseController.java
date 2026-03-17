@@ -66,4 +66,17 @@ public class KnowledgeBaseController {
     public ApiResponse<List<KnowledgeBaseResponse>> byDepartment(@RequestParam Long deptId) {
         return ApiResponse.ok(knowledgeBaseService.listByDepartment(deptId, SecurityUtils.currentUser()));
     }
+
+    @GetMapping("/{kbId}/members")
+    public ApiResponse<List<KbMemberDetailResponse>> members(@PathVariable Long kbId) {
+        return ApiResponse.ok(knowledgeBaseService.listMembers(kbId, SecurityUtils.currentUser()));
+    }
+
+    @PostMapping("/{kbId}/members")
+    public ApiResponse<MemberResponse> inviteOrUpdateMember(@PathVariable Long kbId,
+                                                            @Valid @RequestBody InviteMemberRequest request,
+                                                            HttpServletRequest httpRequest) {
+        CurrentUser user = SecurityUtils.currentUser();
+        return ApiResponse.ok(knowledgeBaseService.upsertMember(kbId, request, user, IpUtils.resolve(httpRequest)));
+    }
 }

@@ -65,3 +65,20 @@ CREATE TABLE IF NOT EXISTS document_edit_logs (
 -- 注意：这会影响现有数据，建议先备份
 -- UPDATE knowledge_bases SET type = 'COMPANY' WHERE type = 'PUBLIC';
 -- 新的类型：COMPANY（公司公开）、DEPARTMENT（部门）、PRIVATE（私有）
+
+-- 6. 收藏表（文档收藏）
+CREATE TABLE IF NOT EXISTS favorite_documents (
+    id BIGINT NOT NULL AUTO_INCREMENT,
+    user_id BIGINT NOT NULL,
+    kb_id BIGINT NOT NULL,
+    doc_id BIGINT NOT NULL,
+    created_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6),
+    updated_at DATETIME(6) NOT NULL DEFAULT CURRENT_TIMESTAMP(6) ON UPDATE CURRENT_TIMESTAMP(6),
+    deleted_at DATETIME(6) NULL,
+    PRIMARY KEY (id),
+    UNIQUE KEY idx_favorite_user_doc (user_id, doc_id),
+    KEY idx_favorite_user_kb (user_id, kb_id),
+    CONSTRAINT fk_fav_user FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE,
+    CONSTRAINT fk_fav_kb FOREIGN KEY (kb_id) REFERENCES knowledge_bases(id) ON DELETE CASCADE,
+    CONSTRAINT fk_fav_doc FOREIGN KEY (doc_id) REFERENCES documents(id) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='收藏文档表';

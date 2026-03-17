@@ -2,16 +2,23 @@
   <div>
     <div
       class="doc-item"
-      :class="{ child: level > 0 }"
+      :class="{ child: level > 0, active: isActive }"
       :style="{ paddingLeft: `${12 + level * 16}px` }"
       @click="$emit('open', node)"
       @mouseenter="hover = true"
       @mouseleave="hover = false"
     >
-      <svg class="doc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-        <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-        <path d="M14 2v6h6"/>
-      </svg>
+      <button
+        v-if="hasChildren"
+        class="tree-toggle-btn"
+        :title="isExpanded ? '收起' : '展开'"
+        @click.stop="emitToggle"
+      >
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path :d="isExpanded ? 'M9 18l6-6-6-6' : 'M6 9l6 6 6-6'" />
+        </svg>
+      </button>
+      <span v-else class="tree-toggle-placeholder"></span>
       <div class="doc-content">
         <h4 class="doc-title">{{ node.title }}</h4>
       </div>
@@ -34,39 +41,53 @@
       </div>
     </div>
 
-    <div v-if="node.children && node.children.length" class="children">
-      <DocTreeItem
-        v-for="child in node.children"
-        :key="child.id"
-        :node="child"
-        :level="level + 1"
-        :close-signal="closeSignal"
-        @open="$emit('open', $event)"
-        @rename="$emit('rename', $event)"
-        @delete="$emit('delete', $event)"
-        @new-child="$emit('new-child', $event)"
-        @new-sibling="$emit('new-sibling', $event)"
-        @request-close-menus="$emit('request-close-menus')"
-      />
-    </div>
+    <transition name="tree-collapse">
+      <div v-if="hasChildren && isExpanded" class="children">
+        <DocTreeItem
+          v-for="child in node.children"
+          :key="child.id"
+          :node="child"
+          :level="level + 1"
+          :close-signal="closeSignal"
+          :active-id="activeId"
+          :expanded-ids="expandedIds"
+          @toggle="$emit('toggle', $event)"
+          @open="$emit('open', $event)"
+          @rename="$emit('rename', $event)"
+          @delete="$emit('delete', $event)"
+          @new-child="$emit('new-child', $event)"
+          @new-sibling="$emit('new-sibling', $event)"
+          @request-close-menus="$emit('request-close-menus')"
+        />
+      </div>
+    </transition>
   </div>
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, ref, watch } from 'vue'
 
 defineOptions({ name: 'DocTreeItem' })
 
 const props = defineProps({
   node: { type: Object, required: true },
   level: { type: Number, default: 0 },
-  closeSignal: { type: Number, default: 0 }
+  closeSignal: { type: Number, default: 0 },
+  activeId: { type: [String, Number], default: '' },
+  expandedIds: { type: Object, default: null } // Set<string>
 })
 
-const emit = defineEmits(['open', 'rename', 'delete', 'new-child', 'new-sibling', 'request-close-menus'])
+const emit = defineEmits(['toggle', 'open', 'rename', 'delete', 'new-child', 'new-sibling', 'request-close-menus'])
 
 const hover = ref(false)
 const menuOpen = ref(false)
+
+const hasChildren = computed(() => (props.node?.children || []).length > 0)
+const isExpanded = computed(() => {
+  if (!props.expandedIds) return true
+  return props.expandedIds.has(String(props.node.id))
+})
+const isActive = computed(() => String(props.node.id) === String(props.activeId || ''))
 
 watch(hover, (h) => {
   if (!h) menuOpen.value = false
@@ -87,6 +108,10 @@ function closeMenu() {
 function toggleMenu() {
   emit('request-close-menus')
   menuOpen.value = !menuOpen.value
+}
+
+function emitToggle() {
+  emit('toggle', props.node.id)
 }
 
 function emitRename() {
@@ -127,11 +152,43 @@ function emitNewSibling() {
   background: var(--line-light);
 }
 
-.doc-icon {
+.doc-item.active {
+  background: var(--brand-light);
+  color: var(--brand);
+}
+
+.tree-toggle-btn {
   width: 16px;
   height: 16px;
-  flex-shrink: 0;
+  border: none;
+  padding: 0;
+  margin-right: 2px;
+  border-radius: 4px;
+  background: transparent;
   color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.tree-toggle-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tree-toggle-btn:hover {
+  background: var(--line-light);
+  color: var(--brand);
+}
+
+.tree-toggle-placeholder {
+  width: 16px;
+  height: 16px;
+  margin-right: 2px;
+  flex-shrink: 0;
 }
 
 .doc-content {
@@ -202,6 +259,17 @@ function emitNewSibling() {
   background: var(--line);
   margin: 6px 4px;
   opacity: 0.85;
+}
+
+.tree-collapse-enter-active,
+.tree-collapse-leave-active {
+  transition: all 0.18s ease-out;
+}
+
+.tree-collapse-enter-from,
+.tree-collapse-leave-to {
+  opacity: 0;
+  transform: translateY(-2px);
 }
 </style>
 

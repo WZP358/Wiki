@@ -10,6 +10,7 @@ import SearchPage from '../views/SearchPage.vue'
 import KbHomePage from '../views/KbHomePage.vue'
 import UserHomePage from '../views/UserHomePage.vue'
 import SettingsPage from '../views/SettingsPage.vue'
+import FavoritesPage from '../views/FavoritesPage.vue'
 
 const routes = [
   { path: '/auth', component: AuthPage, meta: { public: true } },
@@ -17,6 +18,7 @@ const routes = [
   { path: '/', component: DashboardPage },
   { path: '/editor/:kbId/:docId?', component: EditorPage },
   { path: '/search', component: SearchPage },
+  { path: '/favorites', component: FavoritesPage },
   { path: '/kb/:kbId', component: KbHomePage },
   { path: '/user/:userId', component: UserHomePage },
   { path: '/settings/:kbId?', component: SettingsPage },

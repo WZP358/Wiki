@@ -15,21 +15,25 @@ import org.springframework.stereotype.Service;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 public class KnowledgeBaseService {
     private final KnowledgeBaseRepository kbRepository;
+    private final KnowledgeBaseMemberRepository memberRepository;
     private final DepartmentRepository departmentRepository;
     private final UserRepository userRepository;
     private final SnowflakeIdGenerator idGenerator;
     private final OperationLogService operationLogService;
 
     public KnowledgeBaseService(KnowledgeBaseRepository kbRepository,
+                                KnowledgeBaseMemberRepository memberRepository,
                                 DepartmentRepository departmentRepository,
                                 UserRepository userRepository,
                                 SnowflakeIdGenerator idGenerator,
                                 OperationLogService operationLogService) {
         this.kbRepository = kbRepository;
+        this.memberRepository = memberRepository;
         this.departmentRepository = departmentRepository;
         this.userRepository = userRepository;
         this.idGenerator = idGenerator;
@@ -249,6 +253,13 @@ public class KnowledgeBaseService {
             return;
         }
 
+        // 成员表中的 ADMIN 也允许管理
+        if (memberRepository.findByKbIdAndUserIdAndDeletedAtIsNull(kbId, user.getUserId())
+                .map(m -> m.getRole() == MemberRole.ADMIN)
+                .orElse(false)) {
+            return;
+        }
+
         if (kb.getType() == KnowledgeBaseType.DEPARTMENT) {
             UserAccount currentUser = userRepository.findById(user.getUserId()).orElse(null);
             UserAccount kbOwner = userRepository.findById(kb.getOwnerId()).orElse(null);
@@ -264,6 +275,88 @@ public class KnowledgeBaseService {
         if (!kb.getOwnerId().equals(user.getUserId())) {
             throw new BusinessException(ErrorCode.FORBIDDEN, "仅创建者或部门部长可操作");
         }
+    }
+
+    public List<KbMemberDetailResponse> listMembers(Long kbId, CurrentUser currentUser) {
+        ensureKbVisible(kbId, currentUser);
+        KnowledgeBase kb = kbRepository.findById(kbId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识库不存在"));
+
+        List<KbMemberDetailResponse> result = new ArrayList<>();
+
+        // owner 作为 ADMIN 展示
+        UserAccount owner = userRepository.findById(kb.getOwnerId()).orElse(null);
+        if (owner != null) {
+            result.add(KbMemberDetailResponse.builder()
+                    .userId(owner.getId())
+                    .username(owner.getUsername())
+                    .nickname(owner.getNickname())
+                    .avatarUrl(owner.getAvatarUrl())
+                    .role(MemberRole.ADMIN)
+                    .build());
+        }
+
+        // members
+        List<KnowledgeBaseMember> members = memberRepository.findByKbIdAndDeletedAtIsNull(kbId);
+        for (KnowledgeBaseMember m : members) {
+            UserAccount u = userRepository.findById(m.getUserId()).orElse(null);
+            result.add(KbMemberDetailResponse.builder()
+                    .userId(m.getUserId())
+                    .username(u != null ? u.getUsername() : null)
+                    .nickname(u != null ? u.getNickname() : null)
+                    .avatarUrl(u != null ? u.getAvatarUrl() : null)
+                    .role(m.getRole())
+                    .build());
+        }
+        return result;
+    }
+
+    @Transactional
+    public MemberResponse upsertMember(Long kbId, InviteMemberRequest request, CurrentUser currentUser, String ip) {
+        ensureKbAdmin(kbId, currentUser);
+
+        Long userId = resolveInviteUserId(request);
+        UserAccount invited = userRepository.findById(userId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "用户不存在"));
+
+        if (request.getRole() == null) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "role 不能为空");
+        }
+
+        Optional<KnowledgeBaseMember> existing = memberRepository.findByKbIdAndUserIdAndDeletedAtIsNull(kbId, userId);
+        KnowledgeBaseMember member = existing.orElseGet(() -> {
+            KnowledgeBaseMember nm = new KnowledgeBaseMember();
+            nm.setId(idGenerator.nextId());
+            nm.setKbId(kbId);
+            nm.setUserId(userId);
+            return nm;
+        });
+        member.setRole(request.getRole());
+        memberRepository.save(member);
+
+        operationLogService.record(currentUser.getUserId(), currentUser.getUsername(),
+                existing.isPresent() ? "UPDATE_KB_MEMBER" : "INVITE_KB_MEMBER",
+                "KB_MEMBER", kbId + ":" + userId, ip,
+                "成员变更: " + invited.getUsername() + " -> " + request.getRole());
+
+        return MemberResponse.builder()
+                .userId(userId)
+                .role(request.getRole())
+                .build();
+    }
+
+    private Long resolveInviteUserId(InviteMemberRequest request) {
+        if (request.getUserId() != null) {
+            return request.getUserId();
+        }
+        String key = request.getUsernameOrEmail();
+        if (key == null || key.isBlank()) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "userId 或 usernameOrEmail 必须提供其一");
+        }
+        return userRepository.findByUsername(key)
+                .or(() -> userRepository.findByEmail(key))
+                .map(UserAccount::getId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "用户不存在"));
     }
 
     private KnowledgeBaseResponse toResponse(KnowledgeBase kb, String myRole) {

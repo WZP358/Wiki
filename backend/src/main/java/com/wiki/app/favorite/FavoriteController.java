@@ -20,7 +20,7 @@ public class FavoriteController {
     @PostMapping("/docs/{docId}")
     public ApiResponse<Void> addFavorite(@PathVariable Long docId) {
         CurrentUser user = SecurityUtils.currentUser();
-        favoriteService.addFavorite(use.getUserId(), docId);
+        favoriteService.addFavorite(user.getUserId(), docId);
         return ApiResponse.ok(null);
     }
 

@@ -45,6 +45,21 @@
             </svg>
             <span>分享</span>
           </button>
+          <button
+            v-if="doc"
+            class="action-btn"
+            :disabled="saving"
+            @click="triggerSave('button')"
+            title="保存（Ctrl+S）"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
+              <polyline points="17 21 17 13 7 13 7 21"/>
+              <polyline points="7 3 7 8 15 8"/>
+            </svg>
+            <span>保存</span>
+            <span class="kbd-hint">Ctrl+S</span>
+          </button>
           <button v-if="doc" class="action-btn action-btn-primary" @click="saveDoc" title="发布">
             <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2z"/>
@@ -94,6 +109,17 @@
           </div>
         </div>
         <div class="header-right">
+          <button
+            v-if="doc"
+            class="btn-icon favorite-btn"
+            :class="{ active: isFavorite }"
+            @click="toggleFavorite"
+            :title="isFavorite ? '取消收藏' : '收藏'"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+            </svg>
+          </button>
           <select v-model="form.visibility" class="visibility-select">
             <option value="PUBLIC">公开</option>
             <option value="TEAM">团队</option>
@@ -156,6 +182,12 @@
         </svg>
         <span>分享链接已生成：{{ location.origin }}/share/{{ shareLink }}</span>
         <button class="btn-text" @click="shareLink = ''">关闭</button>
+      </div>
+
+      <!-- 保存提示 -->
+      <div v-if="saveToast.visible" class="save-toast" :class="saveToast.type">
+        <span class="save-toast-text">{{ saveToast.message }}</span>
+        <button class="btn-text" @click="hideSaveToast">关闭</button>
       </div>
     </main>
 
@@ -237,7 +269,7 @@
 import { computed, defineComponent, h, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
-import { docApi, shareApi } from '../api/modules'
+import { docApi, favoriteApi, shareApi } from '../api/modules'
 
 const route = useRoute()
 const router = useRouter()
@@ -255,6 +287,7 @@ function toggleSidebar() {
 const tree = ref([])
 const expandedIds = ref(new Set())
 const doc = ref(null)
+const isFavorite = ref(false)
 const form = reactive({
   title: '',
   markdownContent: '',
@@ -269,6 +302,13 @@ const versionDiff = ref([])
 const shareLink = ref('')
 const editorRef = ref(null)
 const showMoreMenu = ref(false)
+const saving = ref(false)
+const saveToast = reactive({
+  visible: false,
+  message: '',
+  type: 'info' // info | success | error
+})
+let saveToastTimer = null
 
 const previewHtml = computed(() => marked.parse(form.markdownContent || ''))
 
@@ -331,6 +371,7 @@ onMounted(async () => {
     }
   }, 30000)
   window.addEventListener('beforeunload', beforeUnload)
+  window.addEventListener('keydown', handleGlobalKeydown, { capture: true })
 })
 
 watch(() => route.params.docId, async next => {
@@ -368,6 +409,11 @@ onBeforeUnmount(() => {
   }
   disconnectCollab()
   window.removeEventListener('beforeunload', beforeUnload)
+  window.removeEventListener('keydown', handleGlobalKeydown, { capture: true })
+  if (saveToastTimer) {
+    clearTimeout(saveToastTimer)
+    saveToastTimer = null
+  }
 })
 
 function beforeUnload() {
@@ -385,12 +431,29 @@ async function loadDoc(id) {
   form.markdownContent = doc.value.markdownContent
   form.visibility = doc.value.visibility
   form.baseVersion = doc.value.versionNo
+  try {
+    isFavorite.value = await favoriteApi.check(id)
+  } catch (e) {
+    isFavorite.value = false
+  }
   const draft = await docApi.getDraft(id)
   if (draft?.markdownContent) {
     form.markdownContent = draft.markdownContent
     form.title = draft.title || form.title
   }
   connectCollab(id)
+}
+
+async function toggleFavorite() {
+  if (!doc.value?.id) return
+  const id = doc.value.id
+  if (isFavorite.value) {
+    await favoriteApi.remove(id)
+    isFavorite.value = false
+  } else {
+    await favoriteApi.add(id)
+    isFavorite.value = true
+  }
 }
 
 function connectCollab(id) {
@@ -590,6 +653,55 @@ async function saveDoc() {
   await loadTree()
 }
 
+function showSaveToast(message, type = 'info', autoCloseMs = 2000) {
+  saveToast.visible = true
+  saveToast.message = message
+  saveToast.type = type
+  if (saveToastTimer) {
+    clearTimeout(saveToastTimer)
+    saveToastTimer = null
+  }
+  if (autoCloseMs > 0) {
+    saveToastTimer = setTimeout(() => {
+      saveToast.visible = false
+      saveToastTimer = null
+    }, autoCloseMs)
+  }
+}
+
+function hideSaveToast() {
+  saveToast.visible = false
+  if (saveToastTimer) {
+    clearTimeout(saveToastTimer)
+    saveToastTimer = null
+  }
+}
+
+async function triggerSave(source = 'manual') {
+  if (saving.value) return
+  if (!doc.value) return
+  saving.value = true
+  showSaveToast('正在保存…', 'info', 0)
+  try {
+    await saveDoc()
+    showSaveToast(source === 'hotkey' ? '已保存（Ctrl+S）' : '保存成功', 'success', 2000)
+  } catch (e) {
+    // 全局 http 拦截器会弹 ErrorDialog，这里补一个轻提示即可
+    showSaveToast('保存失败，请检查错误提示', 'error', 3500)
+  } finally {
+    saving.value = false
+  }
+}
+
+function handleGlobalKeydown(e) {
+  // Ctrl+S / Cmd+S：拦截浏览器默认“保存网页”
+  const key = (e.key || '').toLowerCase()
+  if ((e.ctrlKey || e.metaKey) && key === 's') {
+    e.preventDefault()
+    triggerSave('hotkey')
+  }
+}
+
 async function saveDraft() {
   if (!doc.value) {
     return
@@ -726,14 +838,6 @@ const TreeItem = defineComponent({
                 ]
               )
             : h('span', { class: 'tree-toggle-placeholder' }),
-          h(
-            'svg',
-            { class: 'doc-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' },
-            [
-              h('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
-              h('path', { d: 'M14 2v6h6M16 13H8M16 17H8M10 9H8' })
-            ]
-          ),
           h('span', { class: 'doc-title' }, props.node.title)
         ]
       )
@@ -835,6 +939,14 @@ const TreeItem = defineComponent({
   color: var(--brand);
 }
 
+.favorite-btn.active {
+  color: #f5c542;
+}
+
+.favorite-btn.active:hover {
+  color: #f5c542;
+}
+
 .collapse-btn svg {
   width: 16px;
   height: 16px;
@@ -900,6 +1012,21 @@ const TreeItem = defineComponent({
   text-align: left;
 }
 
+.action-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.kbd-hint {
+  margin-left: auto;
+  font-size: 12px;
+  color: var(--text-secondary);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 2px 6px;
+  background: var(--bg);
+}
+
 .action-btn:hover {
   background: var(--line-light);
   border-color: var(--brand);
@@ -954,7 +1081,7 @@ const TreeItem = defineComponent({
 .doc-item {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   padding: 6px 12px;
   margin-bottom: 2px;
   border-radius: 6px;
@@ -968,17 +1095,6 @@ const TreeItem = defineComponent({
 
 .doc-item.active {
   background: var(--brand-light);
-  color: var(--brand);
-}
-
-.doc-icon {
-  width: 16px;
-  height: 16px;
-  flex-shrink: 0;
-  color: var(--text-secondary);
-}
-
-.doc-item.active .doc-icon {
   color: var(--brand);
 }
 
@@ -1300,6 +1416,39 @@ const TreeItem = defineComponent({
 
 .btn-text:hover {
   text-decoration: underline;
+}
+
+.save-toast {
+  position: fixed;
+  bottom: 84px;
+  right: 24px;
+  background: var(--panel);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 12px 16px;
+  box-shadow: var(--shadow-lg);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  font-size: 13px;
+  animation: slideUp 0.2s ease;
+  z-index: 1500;
+}
+
+.save-toast.info {
+  border-color: var(--line);
+}
+
+.save-toast.success {
+  border-color: var(--success);
+}
+
+.save-toast.error {
+  border-color: var(--danger, #ef4444);
+}
+
+.save-toast-text {
+  color: var(--text);
 }
 
 /* 空状态 */

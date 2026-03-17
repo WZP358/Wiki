@@ -64,6 +64,7 @@ D:\code\Wiki\backend\src\main\java\com\wiki\app\favorite\FavoriteDocumentReposit
 D:\code\Wiki\backend\src\main\java\com\wiki\app\favorite\FavoriteService.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\kb\dto\CreateKnowledgeBaseRequest.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\kb\dto\InviteMemberRequest.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\kb\dto\KbMemberDetailResponse.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\kb\dto\KnowledgeBaseResponse.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\kb\dto\MemberResponse.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\kb\KnowledgeBase.java
