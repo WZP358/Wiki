@@ -50,6 +50,28 @@ public class KnowledgeBaseService {
         return toResponse(kb, "OWNER");
     }
 
+    public KnowledgeBaseResponse update(Long kbId, CreateKnowledgeBaseRequest request, CurrentUser user, String ip) {
+        KnowledgeBase kb = kbRepository.findById(kbId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识库不存在"));
+        ensureKbAdmin(kbId, user);
+        kb.setName(request.getName());
+        kb.setDescription(request.getDescription());
+        kb.setType(request.getType());
+        kbRepository.save(kb);
+        operationLogService.record(user.getUserId(), user.getUsername(), "UPDATE_KB", "KB", kb.getId().toString(), ip, "修改知识库");
+        return toResponse(kb, kb.getOwnerId().equals(user.getUserId()) ? "OWNER" : "ADMIN");
+    }
+
+    public void delete(Long kbId, CurrentUser user, String ip) {
+        KnowledgeBase kb = kbRepository.findById(kbId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识库不存在"));
+        ensureKbAdmin(kbId, user);
+        // 软删除由 BaseEntity 的 deletedAt 字段控制
+        kb.setDeletedAt(java.time.LocalDateTime.now());
+        kbRepository.save(kb);
+        operationLogService.record(user.getUserId(), user.getUsername(), "DELETE_KB", "KB", kb.getId().toString(), ip, "删除知识库");
+    }
+
     public List<KnowledgeBaseResponse> listMine(CurrentUser user) {
         List<KnowledgeBaseResponse> responses = new ArrayList<>();
         UserAccount userAccount = userRepository.findById(user.getUserId()).orElse(null);
@@ -91,6 +113,57 @@ public class KnowledgeBaseService {
             responses.add(toResponse(kb, "VIEWER"));
         }
         return responses;
+    }
+
+    public KnowledgeBaseResponse getForCurrent(Long kbId, CurrentUser currentUser) {
+        KnowledgeBase kb = kbRepository.findById(kbId)
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识库不存在"));
+        if (kb.getDeletedAt() != null) {
+            throw new BusinessException(ErrorCode.NOT_FOUND, "知识库不存在");
+        }
+        String role;
+        if (kb.getOwnerId().equals(currentUser.getUserId())) {
+            role = "OWNER";
+        } else {
+            ensureKbVisible(kbId, currentUser);
+            role = "VIEWER";
+        }
+        return toResponse(kb, role);
+    }
+
+    public List<KnowledgeBaseResponse> searchVisibleKbs(String keyword, CurrentUser currentUser) {
+        List<KnowledgeBase> allMatched = kbRepository.searchByKeyword(keyword);
+        List<KnowledgeBaseResponse> visible = new ArrayList<>();
+        for (KnowledgeBase kb : allMatched) {
+            try {
+                ensureKbVisible(kb.getId(), currentUser);
+                visible.add(toResponse(kb, "VIEWER"));
+            } catch (BusinessException ignored) {
+                // skip not visible
+            }
+        }
+        return visible;
+    }
+
+    public List<KnowledgeBaseResponse> listByDepartment(Long departmentId, CurrentUser currentUser) {
+        List<KnowledgeBase> deptKbs = kbRepository.findByTypeAndDeletedAtIsNull(KnowledgeBaseType.DEPARTMENT);
+        List<KnowledgeBaseResponse> result = new ArrayList<>();
+        for (KnowledgeBase kb : deptKbs) {
+            UserAccount owner = userRepository.findById(kb.getOwnerId()).orElse(null);
+            if (owner == null || owner.getDepartmentId() == null) {
+                continue;
+            }
+            if (!owner.getDepartmentId().equals(departmentId)) {
+                continue;
+            }
+            try {
+                ensureKbVisible(kb.getId(), currentUser);
+                result.add(toResponse(kb, "VIEWER"));
+            } catch (BusinessException ignored) {
+                // 无权限的过滤掉
+            }
+        }
+        return result;
     }
 
     public void ensureKbVisible(Long kbId, CurrentUser user) {

@@ -7,6 +7,8 @@ import AdminLogsPage from '../views/AdminLogsPage.vue'
 import SharePage from '../views/SharePage.vue'
 import ProfilePage from '../views/ProfilePage.vue'
 import SearchPage from '../views/SearchPage.vue'
+import KbHomePage from '../views/KbHomePage.vue'
+import UserHomePage from '../views/UserHomePage.vue'
 import SettingsPage from '../views/SettingsPage.vue'
 
 const routes = [
@@ -15,6 +17,8 @@ const routes = [
   { path: '/', component: DashboardPage },
   { path: '/editor/:kbId/:docId?', component: EditorPage },
   { path: '/search', component: SearchPage },
+  { path: '/kb/:kbId', component: KbHomePage },
+  { path: '/user/:userId', component: UserHomePage },
   { path: '/settings/:kbId?', component: SettingsPage },
   { path: '/recycle', component: RecyclePage },
   { path: '/profile', component: ProfilePage },

@@ -10,7 +10,7 @@
         <input
           v-model="searchQuery"
           class="search-input"
-          placeholder="搜索文档..."
+          placeholder="搜索文档 / 知识库 / 用户ID / 用户名..."
           @keyup.enter="performSearch"
         />
       </div>
@@ -39,12 +39,16 @@
         </div>
 
         <div class="filter-section">
-          <h3 class="filter-title">时间范围</h3>
-          <select v-model="filters.timeRange" class="filter-select">
-            <option value="">不限时间</option>
-            <option value="today">今天</option>
-            <option value="week">本周</option>
-            <option value="month">本月</option>
+          <h3 class="filter-title">部门</h3>
+          <select v-model="selectedDeptId" class="filter-select">
+            <option value="">全部部门</option>
+            <option
+              v-for="dept in departments"
+              :key="dept.id"
+              :value="String(dept.id)"
+            >
+              {{ dept.name }}
+            </option>
           </select>
         </div>
       </aside>
@@ -108,47 +112,21 @@
 <script setup>
 import { ref, computed, onMounted } from 'vue'
 import { useRouter } from 'vue-router'
+import { authApi, kbApi, deptApi } from '../api/modules'
 
 const router = useRouter()
-const searchQuery = ref('2026 技术路线')
+const searchQuery = ref('')
 const sortBy = ref('relevance')
 
 const filters = ref({
   document: true,
-  knowledge: false,
-  member: false,
-  timeRange: ''
+  knowledge: true,
+  member: true
 })
 
-const results = ref([
-  {
-    id: 1,
-    type: 'document',
-    title: '2026 技术路线图：通往 AIGC 原生之路',
-    excerpt: '...这文档详细描述了 2026 年我对核心路的重点计划，特别是关于 技术路线 中的 Rust 迁移方案与 AI 模型集成...',
-    author: '王经理',
-    date: '2026年3月16日',
-    views: 1200
-  },
-  {
-    id: 2,
-    type: 'knowledge',
-    title: '2026 研发规范资产库',
-    excerpt: '包含所有 2026 年发布的最新代码规范、技术栈选择标准和全流程审计规则...',
-    author: '由研发部 管理',
-    date: '45 篇文档',
-    views: 0
-  },
-  {
-    id: 3,
-    type: 'document',
-    title: '品牌新视觉应用：2026 视觉技术路线',
-    excerpt: '本文讨论了如何在 3D 层叠感与温暖中性色应用在市场部所有有的数字资产中，作为 2026 年品牌的主力...',
-    author: '赵市场',
-    date: '2026年2月28日',
-    views: 856
-  }
-])
+const results = ref([])
+const departments = ref([])
+const selectedDeptId = ref('')
 
 const docCount = computed(() => results.value.filter(r => r.type === 'document').length)
 const kbCount = computed(() => results.value.filter(r => r.type === 'knowledge').length)
@@ -156,25 +134,110 @@ const memberCount = computed(() => results.value.filter(r => r.type === 'member'
 
 function getTypeLabel(type) {
   const labels = {
-    document: '研发部 / 核心路线',
+    document: '文档',
     knowledge: '知识库',
-    member: '市场部 / 宣传'
+    member: '成员'
   }
   return labels[type] || type
 }
 
 function performSearch() {
-  console.log('Searching for:', searchQuery.value)
+  const keyword = searchQuery.value.trim()
+  const newResults = []
+
+  // 如果有关键字
+  if (keyword) {
+    // 纯数字优先按用户ID跳主页
+    if (/^[0-9]+$/.test(keyword)) {
+      router.push(`/user/${keyword}`)
+      return
+    }
+
+    // 用户名搜索
+    authApi.publicUserByUsername(keyword)
+      .then(user => {
+        if (filters.value.member) {
+          newResults.push({
+            id: user.id,
+            type: 'member',
+            title: user.nickname || user.username,
+            excerpt: user.departmentName || '成员',
+            author: user.username,
+            date: '',
+            views: 0
+          })
+        }
+      })
+      .catch(() => {})
+
+    // 关键词知识库搜索
+    kbApi.search(keyword)
+      .then(kbs => {
+        if (filters.value.knowledge) {
+          for (const kb of kbs) {
+            newResults.push({
+              id: kb.id,
+              type: 'knowledge',
+              title: kb.name,
+              excerpt: kb.description || '知识库',
+              author: '',
+              date: '',
+              views: 0
+            })
+          }
+        }
+      })
+      .finally(() => {
+        // 如果没有按部门筛选，则直接使用
+        if (!selectedDeptId.value) {
+          results.value = newResults
+        }
+      })
+  }
+
+  // 部门视角：选了部门就根据部门拉知识库
+  if (selectedDeptId.value) {
+    kbApi.byDepartment(selectedDeptId.value)
+      .then(kbs => {
+        if (filters.value.knowledge) {
+          for (const kb of kbs) {
+            newResults.push({
+              id: kb.id,
+              type: 'knowledge',
+              title: kb.name,
+              excerpt: kb.description || '部门知识库',
+              author: '',
+              date: '',
+              views: 0
+            })
+          }
+        }
+      })
+      .finally(() => {
+        results.value = newResults
+      })
+  } else if (!keyword) {
+    // 没关键词也没部门，清空
+    results.value = []
+  }
 }
 
 function openResult(item) {
   if (item.type === 'document') {
-    router.push(`/editor/1/${item.id}`)
+    router.push(`/editor/${item.kbId}/${item.id}`)
+  } else if (item.type === 'knowledge') {
+    router.push(`/kb/${item.id}`)
+  } else if (item.type === 'member') {
+    router.push(`/user/${item.id}`)
   }
 }
 
-onMounted(() => {
-  performSearch()
+onMounted(async () => {
+  try {
+    departments.value = await deptApi.list()
+  } catch (e) {
+    console.error('Failed to load departments', e)
+  }
 })
 </script>
 

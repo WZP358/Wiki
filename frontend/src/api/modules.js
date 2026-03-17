@@ -11,15 +11,26 @@ export const authApi = {
   register: data => http.post('/auth/register', data),
   login: data => http.post('/auth/login', data),
   me: () => http.get('/auth/me'),
-  updateProfile: data => http.put('/auth/profile', data)
+  updateProfile: data => http.put('/auth/profile', data),
+  publicUserById: userId => http.get(`/auth/public-user/by-id/${userId}`),
+  publicUserByUsername: username => http.get('/auth/public-user/by-username', { params: { username } })
 }
 
 export const kbApi = {
   mine: () => http.get('/kbs/mine'),
+  get: kbId => http.get(`/kbs/${kbId}`),
   create: data => http.post('/kbs', data),
+  update: (kbId, data) => http.put(`/kbs/${kbId}`, data),
+  remove: kbId => http.delete(`/kbs/${kbId}`),
   members: kbId => http.get(`/kbs/${kbId}/members`),
   updateMember: (kbId, data) => http.post(`/kbs/${kbId}/members`, data),
-  publicByUser: userId => http.get(`/kbs/user/${userId}/public`)
+  publicByUser: userId => http.get(`/kbs/user/${userId}/public`),
+  search: keyword => http.get('/kbs/search', { params: { keyword } }),
+  byDepartment: deptId => http.get('/kbs/by-department', { params: { deptId } })
+}
+
+export const deptApi = {
+  list: () => http.get('/departments')
 }
 
 export const docApi = {

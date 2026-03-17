@@ -13,6 +13,7 @@ public class JacksonConfig {
         SimpleModule module = new SimpleModule();
         module.addSerializer(Long.class, ToStringSerializer.instance);
         module.addSerializer(Long.TYPE, ToStringSerializer.instance);
-        return builder -> builder.modules(module);
+        // 使用 modulesToInstall 避免覆盖 Spring Boot 默认自动注册的模块（例如 JavaTimeModule）
+        return builder -> builder.modulesToInstall(module);
     }
 }

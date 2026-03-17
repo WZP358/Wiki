@@ -134,7 +134,8 @@ public class DocumentService {
         WikiDocument doc = loadActive(docId);
         ensureReadable(doc, user);
 
-        doc.setViewCount(doc.getViewCount() + 1);
+        long viewCount = doc.getViewCount() == null ? 0L : doc.getViewCount();
+        doc.setViewCount(viewCount + 1);
         documentRepository.save(doc);
         redisTemplate.delete(hotKey(doc.getKbId()));
 

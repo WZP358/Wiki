@@ -55,23 +55,25 @@
           </button>
         </div>
 
-        <!-- 文档树 -->
+        <!-- 文档树（可折叠） -->
         <nav class="doc-tree">
           <div class="doc-tree-header">
             <span class="tree-title">文档列表</span>
           </div>
-          <div
-            v-for="node in tree"
-            :key="node.id"
-            class="doc-item"
-            :class="{ active: String(node.id) === String(docId) }"
-            @click="openDoc(node.id)"
-          >
-            <svg class="doc-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
-              <path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/>
-            </svg>
-            <span class="doc-title">{{ node.title }}</span>
+          <div class="doc-tree-body">
+            <div
+              v-for="node in treeRoots"
+              :key="node.id"
+            >
+              <TreeItem
+                :node="node"
+                :level="0"
+                :active-id="String(docId)"
+                :expanded-ids="expandedIds"
+                @toggle="toggleNode"
+                @open="openDoc"
+              />
+            </div>
           </div>
         </nav>
       </div>
@@ -232,7 +234,7 @@
 </template>
 
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, defineComponent, h, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { marked } from 'marked'
 import { docApi, shareApi } from '../api/modules'
@@ -251,6 +253,7 @@ function toggleSidebar() {
 }
 
 const tree = ref([])
+const expandedIds = ref(new Set())
 const doc = ref(null)
 const form = reactive({
   title: '',
@@ -268,6 +271,33 @@ const editorRef = ref(null)
 const showMoreMenu = ref(false)
 
 const previewHtml = computed(() => marked.parse(form.markdownContent || ''))
+
+// 将扁平列表转换为树形结构
+const treeRoots = computed(() => {
+  const byId = new Map()
+  const roots = []
+  const raw = tree.value || []
+
+  raw.forEach(item => {
+    byId.set(String(item.id), { ...item, children: [] })
+  })
+
+  byId.forEach(node => {
+    const pid = node.parentId != null ? String(node.parentId) : null
+    if (pid && byId.has(pid)) {
+      byId.get(pid).children.push(node)
+    } else {
+      roots.push(node)
+    }
+  })
+
+  // 默认展开第一层
+  if (expandedIds.value.size === 0) {
+    roots.forEach(n => expandedIds.value.add(String(n.id)))
+  }
+
+  return roots
+})
 
 const ws = ref(null)
 const mySessionId = ref('')
@@ -529,6 +559,10 @@ async function openDoc(id) {
 }
 
 async function createDoc() {
+  if (!kbId.value) {
+    alert('请先选择一个知识库（左侧列表或首页）再创建文档')
+    return
+  }
   const created = await docApi.create({
     kbId: kbId.value,
     title: '未命名文档',
@@ -630,6 +664,103 @@ async function search() {
     versionNo: item.versionNo
   }))
 }
+
+function toggleNode(id) {
+  const key = String(id)
+  const next = new Set(expandedIds.value)
+  if (next.has(key)) {
+    next.delete(key)
+  } else {
+    next.add(key)
+  }
+  expandedIds.value = next
+}
+
+// 内联树节点组件：用 render 函数避免 runtime-only 构建下的 template 编译警告
+const TreeItem = defineComponent({
+  name: 'TreeItem',
+  props: {
+    node: { type: Object, required: true },
+    level: { type: Number, required: true },
+    activeId: { type: String, required: true },
+    expandedIds: { type: Object, required: true }
+  },
+  emits: ['toggle', 'open'],
+  setup(props, { emit }) {
+    const isFolder = computed(() => (props.node?.children || []).length > 0)
+    const isExpanded = computed(() => props.expandedIds.has(String(props.node.id)))
+
+    const handleToggle = (e) => {
+      e.stopPropagation()
+      if (isFolder.value) {
+        emit('toggle', props.node.id)
+      } else {
+        emit('open', props.node.id)
+      }
+    }
+
+    const handleClickRow = () => {
+      emit('open', props.node.id)
+    }
+
+    return () => {
+      const paddingLeft = `${12 + props.level * 16}px`
+      const row = h(
+        'div',
+        {
+          class: ['doc-item', { active: String(props.node.id) === props.activeId }],
+          style: { paddingLeft },
+          onClick: handleClickRow
+        },
+        [
+          isFolder.value
+            ? h(
+                'button',
+                { class: 'tree-toggle-btn', onClick: handleToggle },
+                [
+                  h(
+                    'svg',
+                    { viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' },
+                    [h('path', { d: isExpanded.value ? 'M9 18l6-6-6-6' : 'M6 9l6 6 6-6' })]
+                  )
+                ]
+              )
+            : h('span', { class: 'tree-toggle-placeholder' }),
+          h(
+            'svg',
+            { class: 'doc-icon', viewBox: '0 0 24 24', fill: 'none', stroke: 'currentColor', 'stroke-width': '2' },
+            [
+              h('path', { d: 'M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z' }),
+              h('path', { d: 'M14 2v6h6M16 13H8M16 17H8M10 9H8' })
+            ]
+          ),
+          h('span', { class: 'doc-title' }, props.node.title)
+        ]
+      )
+
+      const children =
+        isFolder.value && isExpanded.value
+          ? h(
+              'div',
+              { class: 'tree-children' },
+              (props.node.children || []).map(child =>
+                h(TreeItem, {
+                  key: child.id,
+                  node: child,
+                  level: props.level + 1,
+                  activeId: props.activeId,
+                  expandedIds: props.expandedIds,
+                  onToggle: id => emit('toggle', id),
+                  onOpen: id => emit('open', id)
+                })
+              )
+            )
+          : null
+
+      return h('div', {}, [row, children ? h('transition', { name: 'tree-collapse' }, { default: () => children }) : null])
+    }
+  }
+})
 </script>
 
 <style scoped>
@@ -803,6 +934,10 @@ async function search() {
   padding: 8px;
 }
 
+.doc-tree-body {
+  padding-top: 4px;
+}
+
 .doc-tree-header {
   padding: 8px 12px;
   margin-bottom: 8px;
@@ -819,8 +954,8 @@ async function search() {
 .doc-item {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 10px 12px;
+  gap: 8px;
+  padding: 6px 12px;
   margin-bottom: 2px;
   border-radius: 6px;
   cursor: pointer;
@@ -853,6 +988,55 @@ async function search() {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+.tree-toggle-btn {
+  width: 16px;
+  height: 16px;
+  border: none;
+  padding: 0;
+  margin-right: 2px;
+  border-radius: 4px;
+  background: transparent;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s ease, color 0.15s ease, transform 0.15s ease;
+}
+
+.tree-toggle-btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+.tree-toggle-btn:hover {
+  background: var(--line-light);
+  color: var(--brand);
+}
+
+.tree-toggle-placeholder {
+  width: 16px;
+  height: 16px;
+  margin-right: 2px;
+  flex-shrink: 0;
+}
+
+.tree-children {
+  margin-top: 2px;
+}
+
+.tree-collapse-enter-active,
+.tree-collapse-leave-active {
+  transition: all 0.18s ease-out;
+}
+
+.tree-collapse-enter-from,
+.tree-collapse-leave-to {
+  opacity: 0;
+  transform: translateY(-2px);
 }
 
 /* 主编辑区 */

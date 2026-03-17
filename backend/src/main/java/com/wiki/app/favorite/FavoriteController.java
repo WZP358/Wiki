@@ -20,14 +20,14 @@ public class FavoriteController {
     @PostMapping("/docs/{docId}")
     public ApiResponse<Void> addFavorite(@PathVariable Long docId) {
         CurrentUser user = SecurityUtils.currentUser();
-        favoriteService.addFavorite(user.getId(), docId);
+        favoriteService.addFavorite(use.getUserId(), docId);
         return ApiResponse.ok(null);
     }
 
     @DeleteMapping("/docs/{docId}")
     public ApiResponse<Void> removeFavorite(@PathVariable Long docId) {
         CurrentUser user = SecurityUtils.currentUser();
-        favoriteService.removeFavorite(user.getId(), docId);
+        favoriteService.removeFavorite(user.getUserId(), docId);
         return ApiResponse.ok(null);
     }
 
@@ -35,14 +35,14 @@ public class FavoriteController {
     public ApiResponse<List<FavoriteDocumentResponse>> myFavorites(@RequestParam(required = false) Long kbId) {
         CurrentUser user = SecurityUtils.currentUser();
         if (kbId != null) {
-            return ApiResponse.ok(favoriteService.getFavoritesByKb(user.getId(), kbId));
+            return ApiResponse.ok(favoriteService.getFavoritesByKb(user.getUserId(), kbId));
         }
-        return ApiResponse.ok(favoriteService.getAllFavorites(user.getId()));
+        return ApiResponse.ok(favoriteService.getAllFavorites(user.getUserId()));
     }
 
     @GetMapping("/check/{docId}")
     public ApiResponse<Boolean> checkFavorite(@PathVariable Long docId) {
         CurrentUser user = SecurityUtils.currentUser();
-        return ApiResponse.ok(favoriteService.isFavorite(user.getId(), docId));
+        return ApiResponse.ok(favoriteService.isFavorite(user.getUserId(), docId));
     }
 }

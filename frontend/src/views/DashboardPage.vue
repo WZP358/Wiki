@@ -69,9 +69,10 @@
 
 <script setup>
 import { onMounted, ref, computed } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { kbApi, docApi } from '../api/modules'
 
+const route = useRoute()
 const router = useRouter()
 const kbs = ref([])
 const activeKbId = ref('')
@@ -82,7 +83,10 @@ const totalDocs = computed(() => latest.value.length + hot.value.length)
 
 onMounted(async () => {
   await loadKbs()
-  if (kbs.value[0]) {
+  const kbFromQuery = route.query.kbId
+  if (kbFromQuery) {
+    await pickKb(kbFromQuery)
+  } else if (kbs.value[0]) {
     await pickKb(kbs.value[0].id)
   }
 })
@@ -95,25 +99,6 @@ async function pickKb(kbId) {
   activeKbId.value = kbId
   latest.value = await docApi.latest(kbId)
   hot.value = await docApi.hot(kbId)
-}
-
-async function createDoc() {
-  if (!activeKbId.value) {
-    if (kbs.value.length === 0) {
-      alert('请先创建知识库')
-      return
-    }
-    alert('请先选择知识库')
-    return
-  }
-  const created = await docApi.create({
-    kbId: activeKbId.value,
-    title: '未命名文档',
-    markdownContent: '# 新文档\n',
-    visibility: 'PUBLIC',
-    published: true
-  })
-  router.push(`/editor/${activeKbId.value}/${created.id}`)
 }
 
 function openDoc(docId) {
@@ -224,6 +209,18 @@ function formatDate(date) {
 
 .doc-item:hover {
   background: var(--line-light);
+}
+
+/* 文档行的样式已迁移到 DocTreeItem 组件中，避免重复与冲突 */
+
+.btn-new-doc {
+  border: none;
+  border-radius: 4px;
+  padding: 6px 12px;
+  font-size: 13px;
+  cursor: pointer;
+  background: var(--brand);
+  color: #fff;
 }
 
 .doc-icon {

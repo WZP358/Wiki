@@ -18,7 +18,9 @@ D:\code\Wiki\backend\src\main\java\com\wiki\app\config\SchedulingConfig.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\config\SecurityConfig.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\config\WebConfig.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\dept\Department.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\dept\DepartmentController.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\dept\DepartmentRepository.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\dept\dto\DepartmentResponse.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\AsyncCleanupService.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\CloudStorageCleanupService.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\DocumentController.java
@@ -55,6 +57,11 @@ D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\search\WikiDocumentSearchEnt
 D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\search\WikiDocumentSearchRepository.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\WikiDocument.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\doc\WikiDocumentRepository.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\favorite\dto\FavoriteDocumentResponse.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\favorite\FavoriteController.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\favorite\FavoriteDocument.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\favorite\FavoriteDocumentRepository.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\favorite\FavoriteService.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\kb\dto\CreateKnowledgeBaseRequest.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\kb\dto\InviteMemberRequest.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\kb\dto\KnowledgeBaseResponse.java
@@ -89,6 +96,7 @@ D:\code\Wiki\backend\src\main\java\com\wiki\app\user\AuthService.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\user\AvatarStorageService.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\user\dto\LoginRequest.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\user\dto\LoginResponse.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\user\dto\PublicUserProfileResponse.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\user\dto\RegisterRequest.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\user\dto\SendCodeRequest.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\user\dto\SendCodeResponse.java

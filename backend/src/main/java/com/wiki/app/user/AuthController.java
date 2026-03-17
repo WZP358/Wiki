@@ -1,6 +1,8 @@
 package com.wiki.app.user;
 
 import com.wiki.app.common.ApiResponse;
+import com.wiki.app.dept.Department;
+import com.wiki.app.dept.DepartmentRepository;
 import com.wiki.app.security.CurrentUser;
 import com.wiki.app.security.SecurityUtils;
 import com.wiki.app.user.dto.*;
@@ -15,10 +17,17 @@ import org.springframework.web.multipart.MultipartFile;
 public class AuthController {
     private final AuthService authService;
     private final AvatarStorageService avatarStorageService;
+    private final UserRepository userRepository;
+    private final DepartmentRepository departmentRepository;
 
-    public AuthController(AuthService authService, AvatarStorageService avatarStorageService) {
+    public AuthController(AuthService authService,
+                          AvatarStorageService avatarStorageService,
+                          UserRepository userRepository,
+                          DepartmentRepository departmentRepository) {
         this.authService = authService;
         this.avatarStorageService = avatarStorageService;
+        this.userRepository = userRepository;
+        this.departmentRepository = departmentRepository;
     }
 
     @PostMapping("/send-code")
@@ -63,5 +72,35 @@ public class AuthController {
                                                           HttpServletRequest httpRequest) {
         CurrentUser currentUser = SecurityUtils.currentUser();
         return ApiResponse.ok(authService.updateProfile(currentUser, request, IpUtils.resolve(httpRequest)));
+    }
+
+    @GetMapping("/public-user/by-id/{userId}")
+    public ApiResponse<PublicUserProfileResponse> publicUserById(@PathVariable Long userId) {
+        UserAccount user = userRepository.findById(userId)
+                .orElseThrow(() -> new com.wiki.app.common.BusinessException(
+                        com.wiki.app.common.ErrorCode.NOT_FOUND, "User not found"));
+        String deptName = null;
+        if (user.getDepartmentId() != null) {
+            Department dept = departmentRepository.findById(user.getDepartmentId()).orElse(null);
+            if (dept != null) {
+                deptName = dept.getName();
+            }
+        }
+        return ApiResponse.ok(authService.toPublicProfile(user, deptName));
+    }
+
+    @GetMapping("/public-user/by-username")
+    public ApiResponse<PublicUserProfileResponse> publicUserByUsername(@RequestParam String username) {
+        UserAccount user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new com.wiki.app.common.BusinessException(
+                        com.wiki.app.common.ErrorCode.NOT_FOUND, "User not found"));
+        String deptName = null;
+        if (user.getDepartmentId() != null) {
+            Department dept = departmentRepository.findById(user.getDepartmentId()).orElse(null);
+            if (dept != null) {
+                deptName = dept.getName();
+            }
+        }
+        return ApiResponse.ok(authService.toPublicProfile(user, deptName));
     }
 }

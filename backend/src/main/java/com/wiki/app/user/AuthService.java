@@ -232,6 +232,16 @@ public class AuthService {
                 .build();
     }
 
+    public PublicUserProfileResponse toPublicProfile(UserAccount user, String departmentName) {
+        return PublicUserProfileResponse.builder()
+                .id(user.getId())
+                .username(user.getUsername())
+                .nickname(user.getNickname())
+                .avatarUrl(user.getAvatarUrl())
+                .departmentName(departmentName)
+                .build();
+    }
+
     private enum ContactType {
         EMAIL,
         PHONE

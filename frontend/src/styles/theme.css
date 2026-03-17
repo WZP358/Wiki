@@ -1,86 +1,88 @@
 ﻿:root {
-  --bg: #f5f7fa;
+  /* 语雀风格：偏中性灰 + 品牌绿色 */
+  --bg: #f5f6f7;
   --panel: #ffffff;
-  --text: #262626;
-  --text-secondary: #595959;
-  --muted: #8c8c8c;
-  --brand: #1890ff;
-  --brand-hover: #40a9ff;
-  --brand-soft: #e6f7ff;
-  --brand-light: #f0f9ff;
-  --success: #52c41a;
-  --warning: #faad14;
-  --danger: #ff4d4f;
-  --line: #e8e8e8;
-  --line-light: #f5f5f5;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.08);
-  --radius-sm: 2px;
-  --radius: 4px;
-  --radius-lg: 8px;
+  --text: #1f2933;
+  --text-secondary: #697386;
+  --muted: #9fb3c8;
+  --brand: #22c55e;
+  --brand-hover: #16a34a;
+  --brand-soft: #ecfdf3;
+  --brand-light: #e1f8e9;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --line: #e5e7eb;
+  --line-light: #f3f4f6;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 18px 45px rgba(15, 23, 42, 0.2);
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 12px;
+  --drawer-w: 320px;
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --bg: #1a1d24;
-    --panel: #25272e;
-    --text: #e8eaed;
-    --text-secondary: #b4b8bf;
-    --muted: #8f959e;
-    --brand: #3d8eff;
-    --brand-hover: #5ca3ff;
-    --brand-soft: #1a2942;
-    --brand-light: #0f1a2e;
-    --success: #00d68f;
-    --warning: #ffb020;
-    --danger: #ff4d4f;
-    --line: #3a3d45;
-    --line-light: #2f3238;
-    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-    --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-    --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
+    --bg: #050816;
+    --panel: #111827;
+    --text: #e5e7eb;
+    --text-secondary: #9ca3af;
+    --muted: #6b7280;
+    --brand: #22c55e;
+    --brand-hover: #16a34a;
+    --brand-soft: #052e16;
+    --brand-light: #064e3b;
+    --success: #22c55e;
+    --warning: #f59e0b;
+    --danger: #f97373;
+    --line: #1f2933;
+    --line-light: #111827;
+    --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+    --shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+    --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.7);
   }
 }
 
 [data-theme='light'] {
-  --bg: #f5f7fa;
+  --bg: #f5f6f7;
   --panel: #ffffff;
-  --text: #262626;
-  --text-secondary: #595959;
-  --muted: #8c8c8c;
-  --brand: #1890ff;
-  --brand-hover: #40a9ff;
-  --brand-soft: #e6f7ff;
-  --brand-light: #f0f9ff;
-  --success: #52c41a;
-  --warning: #faad14;
-  --danger: #ff4d4f;
-  --line: #e8e8e8;
-  --line-light: #f5f5f5;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.03);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
-  --shadow-lg: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --text: #1f2933;
+  --text-secondary: #697386;
+  --muted: #9fb3c8;
+  --brand: #22c55e;
+  --brand-hover: #16a34a;
+  --brand-soft: #ecfdf3;
+  --brand-light: #e1f8e9;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #ef4444;
+  --line: #e5e7eb;
+  --line-light: #f3f4f6;
+  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.03);
+  --shadow: 0 4px 12px rgba(15, 23, 42, 0.06);
+  --shadow-lg: 0 18px 45px rgba(15, 23, 42, 0.2);
 }
 
 [data-theme='dark'] {
-  --bg: #1a1d24;
-  --panel: #25272e;
-  --text: #e8eaed;
-  --text-secondary: #b4b8bf;
-  --muted: #8f959e;
-  --brand: #3d8eff;
-  --brand-hover: #5ca3ff;
-  --brand-soft: #1a2942;
-  --brand-light: #0f1a2e;
-  --success: #00d68f;
-  --warning: #ffb020;
-  --danger: #ff4d4f;
-  --line: #3a3d45;
-  --line-light: #2f3238;
-  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.2);
-  --shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
-  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.4);
+  --bg: #050816;
+  --panel: #111827;
+  --text: #e5e7eb;
+  --text-secondary: #9ca3af;
+  --muted: #6b7280;
+  --brand: #22c55e;
+  --brand-hover: #16a34a;
+  --brand-soft: #052e16;
+  --brand-light: #064e3b;
+  --success: #22c55e;
+  --warning: #f59e0b;
+  --danger: #f97373;
+  --line: #1f2933;
+  --line-light: #111827;
+  --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.25);
+  --shadow: 0 4px 16px rgba(0, 0, 0, 0.45);
+  --shadow-lg: 0 24px 60px rgba(0, 0, 0, 0.7);
 }
 
 * {
@@ -148,6 +150,14 @@ select {
   background: var(--brand);
   border-color: var(--brand);
   color: #fff;
+}
+
+.btn-primary:focus {
+  box-shadow: 0 0 0 3px var(--brand-soft);
+}
+
+.btn:focus {
+  box-shadow: 0 0 0 3px var(--brand-soft);
 }
 
 .btn-primary:hover {
