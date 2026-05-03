@@ -31,9 +31,11 @@ public class SecurityConfig {
                         .accessDeniedHandler(restAuthHandlers)
                 )
                 .authorizeHttpRequests(auth -> auth
+                        .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                         .requestMatchers("/swagger-ui/**", "/v3/api-docs/**", "/swagger-ui.html").permitAll()
                         .requestMatchers("/ws/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/public/**", "/api/shares/public/**").permitAll()
+                        .requestMatchers(HttpMethod.HEAD, "/api/public/**", "/api/shares/public/**").permitAll()
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/send-code", "/api/auth/upload-avatar").permitAll()
                         .anyRequest().authenticated()
                 )

@@ -13,5 +13,9 @@ public class CreateKnowledgeBaseRequest {
     @NotNull
     private KnowledgeBaseType type;
 
+    private Long parentId;
+
+    private Long teamId;
+
     private String description;
 }

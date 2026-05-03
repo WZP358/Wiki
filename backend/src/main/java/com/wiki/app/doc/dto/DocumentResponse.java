@@ -16,9 +16,12 @@ public class DocumentResponse {
     private String markdownContent;
     private String htmlContent;
     private Long ownerId;
+    private String ownerUsername;
+    private String ownerName;
     private DocVisibility visibility;
     private Long viewCount;
     private Integer versionNo;
     private Boolean published;
     private LocalDateTime updatedAt;
+    private String searchHighlight;
 }

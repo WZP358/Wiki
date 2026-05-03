@@ -5,6 +5,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 
 import java.time.LocalDateTime;
 
@@ -18,6 +19,9 @@ public interface DocumentViewLogRepository extends JpaRepository<DocumentViewLog
 
     @Query("SELECT COUNT(v) FROM DocumentViewLog v WHERE v.docId = :docId AND v.createdAt >= :since")
     Long countViewsSince(Long docId, LocalDateTime since);
+
+    @Query("select count(v) from DocumentViewLog v where v.createdAt >= :since")
+    long countSince(@Param("since") LocalDateTime since);
 
     @Modifying
     @Query("DELETE FROM DocumentViewLog v WHERE v.createdAt < :cutoffDate")

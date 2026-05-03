@@ -3,6 +3,8 @@ package com.wiki.app.user;
 import com.wiki.app.common.BusinessException;
 import com.wiki.app.common.ErrorCode;
 import com.wiki.app.common.SnowflakeIdGenerator;
+import com.wiki.app.dept.Department;
+import com.wiki.app.dept.DepartmentRepository;
 import com.wiki.app.log.OperationLogService;
 import com.wiki.app.mail.VerifyCodeResult;
 import com.wiki.app.security.CurrentUser;
@@ -21,19 +23,25 @@ public class AuthService {
     private final JwtTokenProvider jwtTokenProvider;
     private final SnowflakeIdGenerator idGenerator;
     private final OperationLogService operationLogService;
+    private final DepartmentRepository departmentRepository;
+    private final UserTeamMembershipRepository teamMembershipRepository;
 
     public AuthService(UserRepository userRepository,
                        VerifyCodeService verifyCodeService,
                        PasswordEncoder passwordEncoder,
                        JwtTokenProvider jwtTokenProvider,
                        SnowflakeIdGenerator idGenerator,
-                       OperationLogService operationLogService) {
+                       OperationLogService operationLogService,
+                       DepartmentRepository departmentRepository,
+                       UserTeamMembershipRepository teamMembershipRepository) {
         this.userRepository = userRepository;
         this.verifyCodeService = verifyCodeService;
         this.passwordEncoder = passwordEncoder;
         this.jwtTokenProvider = jwtTokenProvider;
         this.idGenerator = idGenerator;
         this.operationLogService = operationLogService;
+        this.departmentRepository = departmentRepository;
+        this.teamMembershipRepository = teamMembershipRepository;
     }
 
     public SendCodeResponse sendCode(SendCodeRequest request, String ip) {
@@ -98,7 +106,9 @@ public class AuthService {
         user.setUsername(request.getUsername());
         user.setEmail(parsedContact.type() == ContactType.EMAIL ? parsedContact.value() : null);
         user.setPhone(parsedContact.type() == ContactType.PHONE ? parsedContact.value() : null);
-        user.setAvatarUrl(emptyToNull(request.getAvatarUrl()));
+        String avatarUrl = emptyToNull(request.getAvatarUrl());
+        validateAvatarUrl(avatarUrl);
+        user.setAvatarUrl(avatarUrl);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setNickname(request.getUsername());
         user.setRole(UserRole.USER);
@@ -134,7 +144,9 @@ public class AuthService {
         UserAccount user = userRepository.findById(currentUser.getUserId())
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "User not found"));
         user.setNickname(emptyToNull(request.getNickname()));
-        user.setAvatarUrl(emptyToNull(request.getAvatarUrl()));
+        String avatarUrl = emptyToNull(request.getAvatarUrl());
+        validateAvatarUrl(avatarUrl);
+        user.setAvatarUrl(avatarUrl);
 
         if (StringUtils.hasText(request.getEmail())) {
             String newEmail = request.getEmail().trim();
@@ -220,6 +232,28 @@ public class AuthService {
         return StringUtils.hasText(value) ? value.trim() : null;
     }
 
+    /**
+     * 头像仅允许使用本系统上传返回的路径（/api/public/avatars/xxx.ext），不允许外部URL。
+     */
+    private void validateAvatarUrl(String avatarUrl) {
+        if (!StringUtils.hasText(avatarUrl)) {
+            return;
+        }
+        String v = avatarUrl.trim();
+        // reject absolute URLs and protocol-relative URLs
+        String lower = v.toLowerCase();
+        if (lower.startsWith("http://") || lower.startsWith("https://") || lower.startsWith("//")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "Avatar URL must be uploaded file path");
+        }
+        if (!v.startsWith("/api/public/avatars/")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "Avatar URL must be uploaded file path");
+        }
+        // basic traversal hardening: DB should not store weird paths
+        if (v.contains("..") || v.contains("\\") || v.contains("\n") || v.contains("\r")) {
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "Invalid avatar url");
+        }
+    }
+
     private UserProfileResponse toProfile(UserAccount user) {
         return UserProfileResponse.builder()
                 .id(user.getId())
@@ -229,7 +263,36 @@ public class AuthService {
                 .nickname(user.getNickname())
                 .avatarUrl(user.getAvatarUrl())
                 .role(user.getRole().name())
+                .departmentId(user.getDepartmentId())
+                .departmentName(departmentName(user.getDepartmentId()))
+                .teamIds(teamIds(user.getId()))
+                .teamNames(teamNames(user.getId()))
                 .build();
+    }
+
+    private String departmentName(Long departmentId) {
+        if (departmentId == null) {
+            return null;
+        }
+        return departmentRepository.findById(departmentId)
+                .filter(dept -> dept.getDeletedAt() == null)
+                .map(Department::getName)
+                .orElse(null);
+    }
+
+    private java.util.List<Long> teamIds(Long userId) {
+        return teamMembershipRepository.findByUserIdAndDeletedAtIsNull(userId)
+                .stream()
+                .map(UserTeamMembership::getTeamId)
+                .toList();
+    }
+
+    private java.util.List<String> teamNames(Long userId) {
+        return teamMembershipRepository.findByUserIdAndDeletedAtIsNull(userId)
+                .stream()
+                .map(membership -> departmentName(membership.getTeamId()))
+                .filter(name -> name != null && !name.isBlank())
+                .toList();
     }
 
     public PublicUserProfileResponse toPublicProfile(UserAccount user, String departmentName) {

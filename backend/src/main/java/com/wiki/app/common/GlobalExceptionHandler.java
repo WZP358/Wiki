@@ -7,10 +7,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.validation.BindException;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.HttpMediaTypeNotSupportedException;
+import org.springframework.web.HttpRequestMethodNotSupportedException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -34,28 +38,48 @@ public class GlobalExceptionHandler {
     @ResponseStatus(HttpStatus.BAD_REQUEST)
     public ApiResponse<Void> handleValidation(Exception e) {
         log.warn("Validation exception: {}", e.getMessage());
-        return ApiResponse.fail(ErrorCode.VALIDATION_FAILED.name(), "参数校验失败，请检查输入");
+        return ApiResponse.fail(ErrorCode.VALIDATION_FAILED.name(), "Invalid request parameters");
+    }
+
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class, IllegalArgumentException.class})
+    @ResponseStatus(HttpStatus.BAD_REQUEST)
+    public ApiResponse<Void> handleBadRequest(Exception e) {
+        log.warn("Bad request: {}", e.getMessage());
+        return ApiResponse.fail(ErrorCode.BAD_REQUEST.name(), "Invalid request parameters");
+    }
+
+    @ExceptionHandler(HttpRequestMethodNotSupportedException.class)
+    @ResponseStatus(HttpStatus.METHOD_NOT_ALLOWED)
+    public ApiResponse<Void> handleMethodNotSupported(HttpRequestMethodNotSupportedException e) {
+        log.warn("Method not supported: {}", e.getMessage());
+        return ApiResponse.fail(ErrorCode.BAD_REQUEST.name(), "Request method is not supported");
+    }
+
+    @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
+    @ResponseStatus(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+    public ApiResponse<Void> handleMediaTypeNotSupported(HttpMediaTypeNotSupportedException e) {
+        log.warn("Media type not supported: {}", e.getMessage());
+        return ApiResponse.fail(ErrorCode.BAD_REQUEST.name(), "Unsupported upload content type");
     }
 
     @ExceptionHandler(AccessDeniedException.class)
     @ResponseStatus(HttpStatus.FORBIDDEN)
     public ApiResponse<Void> handleDenied(AccessDeniedException e) {
         log.warn("Access denied: {}", e.getMessage());
-        return ApiResponse.fail(ErrorCode.FORBIDDEN.name(), "权限不足，无法执行该操作");
+        return ApiResponse.fail(ErrorCode.FORBIDDEN.name(), "Access denied");
     }
 
     @ExceptionHandler(IllegalStateException.class)
     @ResponseStatus(HttpStatus.UNAUTHORIZED)
     public ApiResponse<Void> handleIllegalState(IllegalStateException e) {
-        // e.g. SecurityUtils.currentUser() when no authentication is present
         log.warn("Illegal state: {}", e.getMessage());
-        return ApiResponse.fail(ErrorCode.UNAUTHORIZED.name(), "请先登录");
+        return ApiResponse.fail(ErrorCode.UNAUTHORIZED.name(), "Please login first");
     }
 
     @ExceptionHandler(Exception.class)
     @ResponseStatus(HttpStatus.INTERNAL_SERVER_ERROR)
     public ApiResponse<Void> handleException(Exception e) {
         log.error("Unexpected error", e);
-        return ApiResponse.fail(ErrorCode.INTERNAL_ERROR.name(), "系统繁忙，请稍后重试");
+        return ApiResponse.fail(ErrorCode.INTERNAL_ERROR.name(), "System is busy, please try again later");
     }
 }

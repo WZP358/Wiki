@@ -11,4 +11,8 @@ public interface KnowledgeBaseMemberRepository extends JpaRepository<KnowledgeBa
     List<KnowledgeBaseMember> findByUserIdAndDeletedAtIsNull(Long userId);
 
     Optional<KnowledgeBaseMember> findByKbIdAndUserIdAndDeletedAtIsNull(Long kbId, Long userId);
+
+    Optional<KnowledgeBaseMember> findByKbIdAndUserId(Long kbId, Long userId);
+
+    long countByKbIdAndRoleAndDeletedAtIsNull(Long kbId, MemberRole role);
 }

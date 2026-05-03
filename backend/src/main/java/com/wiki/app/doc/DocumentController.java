@@ -7,6 +7,8 @@ import com.wiki.app.security.SecurityUtils;
 import com.wiki.app.user.IpUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.validation.Valid;
+import org.springframework.http.MediaType;
+import org.springframework.web.multipart.MultipartFile;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
@@ -15,9 +17,12 @@ import java.util.List;
 @RequestMapping("/api/docs")
 public class DocumentController {
     private final DocumentService documentService;
+    private final DocumentImageStorageService imageStorageService;
 
-    public DocumentController(DocumentService documentService) {
+    public DocumentController(DocumentService documentService,
+                              DocumentImageStorageService imageStorageService) {
         this.documentService = documentService;
+        this.imageStorageService = imageStorageService;
     }
 
     @PostMapping
@@ -25,6 +30,17 @@ public class DocumentController {
                                                 HttpServletRequest httpRequest) {
         CurrentUser user = SecurityUtils.currentUser();
         return ApiResponse.ok(documentService.create(request, user, IpUtils.resolve(httpRequest)));
+    }
+
+    @PostMapping(value = "/images", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    public ApiResponse<UploadDocumentImageResponse> uploadImage(@RequestPart("file") MultipartFile file) {
+        return ApiResponse.ok(new UploadDocumentImageResponse(imageStorageService.saveImage(file)));
+    }
+
+    @PostMapping(value = "/images", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    public ApiResponse<UploadDocumentImageResponse> uploadImageRaw(@RequestBody byte[] bytes,
+                                                                    @RequestHeader(value = "Content-Type", required = false) String contentType) {
+        throw new com.wiki.app.common.BusinessException(com.wiki.app.common.ErrorCode.BAD_REQUEST, "请使用 multipart/form-data 上传图片");
     }
 
     @GetMapping("/tree")
@@ -52,7 +68,7 @@ public class DocumentController {
     public ApiResponse<Void> delete(@PathVariable Long docId, HttpServletRequest httpRequest) {
         CurrentUser user = SecurityUtils.currentUser();
         documentService.delete(docId, user, IpUtils.resolve(httpRequest));
-        return ApiResponse.ok("删除成功", null);
+        return ApiResponse.ok("Document deleted", null);
     }
 
     @GetMapping("/recycle")
@@ -72,7 +88,7 @@ public class DocumentController {
                                    HttpServletRequest httpRequest) {
         CurrentUser user = SecurityUtils.currentUser();
         documentService.purge(docId, user, confirmed, IpUtils.resolve(httpRequest));
-        return ApiResponse.ok("已彻底删除", null);
+        return ApiResponse.ok("Document purged", null);
     }
 
     @GetMapping("/{docId}/versions")
@@ -119,7 +135,7 @@ public class DocumentController {
     @DeleteMapping("/{docId}/lock")
     public ApiResponse<Void> unlock(@PathVariable Long docId) {
         documentService.unlock(docId, SecurityUtils.currentUser());
-        return ApiResponse.ok("已释放编辑锁", null);
+        return ApiResponse.ok("Edit lock released", null);
     }
 
     @PostMapping("/{docId}/draft")

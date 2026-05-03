@@ -12,5 +12,8 @@ public class KnowledgeBaseResponse {
     private KnowledgeBaseType type;
     private String description;
     private Long ownerId;
+    private Long parentId;
+    private Long teamId;
+    private String teamName;
     private String myRole;
 }

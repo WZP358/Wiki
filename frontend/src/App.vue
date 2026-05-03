@@ -1,17 +1,22 @@
 <template>
   <div class="app-shell">
-    <div v-if="!isPublicRoute" class="app-frame">
+    <div
+      v-if="!isPublicRoute && !isAdminLayout"
+      class="app-frame"
+      :style="{ '--sidebar-w': leftSidebarCollapsed ? '56px' : '240px' }"
+    >
       <LeftSidebar
         :kbs="kbs"
         :loading="kbsLoading"
         :active-kb-id="currentKbId"
         :active-key="activePrimaryKey"
+        :collapsed="leftSidebarCollapsed"
         @select-kb="handleSelectKb"
+        @create-kb="handleCreateKb"
         @refresh-kbs="loadKbs"
         @go-dashboard="goDashboard"
         @go-search="goToSearch"
-        @go-favorites="goFavorites"
-        @go-recycle="goRecycle"
+        @toggle-collapsed="toggleLeftSidebar"
         @request-close-menus="closeSignal++"
       />
 
@@ -20,10 +25,13 @@
         :kb-id="currentKbId"
         :active-doc-id="currentDocId"
         :close-signal="closeSignal"
+        :refresh-signal="drawerRefreshSignal"
         @close="drawerVisible = false"
         @open-doc="openDocFromDrawer"
         @create-doc="goCreateDoc"
         @go-home="goKbHome"
+        @rename-doc="renameDocFromDrawer"
+        @delete-doc="deleteDocFromDrawer"
         @request-close-menus="closeSignal++"
       />
 
@@ -37,6 +45,8 @@
     </main>
 
     <LoadingMask />
+    <AppToast />
+    <AppConfirmDialog />
     <ErrorDialog />
   </div>
 </template>
@@ -44,75 +54,82 @@
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { useThemeStore } from './store/theme'
 import ErrorDialog from './components/ErrorDialog.vue'
+import AppToast from './components/AppToast.vue'
+import AppConfirmDialog from './components/AppConfirmDialog.vue'
 import LoadingMask from './components/LoadingMask.vue'
 import LeftSidebar from './components/LeftSidebar.vue'
 import KbDrawer from './components/KbDrawer.vue'
-import { kbApi } from './api/modules'
+import { authApi, docApi, kbApi } from './api/modules'
+import { useAuthStore } from './store/auth'
+import { confirmDialog, promptDialog, showToast } from './utils/errorBus'
 
 const route = useRoute()
 const router = useRouter()
-const theme = useThemeStore()
+const auth = useAuthStore()
 
 const isPublicRoute = computed(() => route.meta.public)
-
-theme.apply()
+const isAdminLayout = computed(() => route.meta.layout === 'admin')
 
 const kbs = ref([])
 const kbsLoading = ref(false)
 const drawerVisible = ref(false)
 const closeSignal = ref(0)
+const drawerRefreshSignal = ref(0)
+const leftSidebarCollapsed = ref(false)
 
-const currentKbId = computed(() => {
-  return String(route.params.kbId || route.query.kbId || '')
-})
+const LEFT_SIDEBAR_COLLAPSED_KEY = 'wiki.leftSidebarCollapsed'
 
+const currentKbId = computed(() => String(route.params.kbId || route.query.kbId || ''))
 const currentDocId = computed(() => String(route.params.docId || ''))
 
 const activePrimaryKey = computed(() => {
-  const p = route.path || '/'
-  if (p.startsWith('/search')) return 'search'
-  if (p.startsWith('/favorites')) return 'favorites'
-  if (p.startsWith('/recycle')) return 'recycle'
+  const path = route.path || '/'
+  if (path.startsWith('/search')) return 'search'
   return 'dashboard'
 })
 
 const strongKbContext = computed(() => {
-  const p = route.path || '/'
-  return p.startsWith('/editor/') || p.startsWith('/kb/')
+  const path = route.path || '/'
+  return path.startsWith('/editor/') || path.startsWith('/kb/')
 })
 
 onMounted(() => {
-  if (!isPublicRoute.value) {
+  if (shouldLoadPrivateShell()) {
+    leftSidebarCollapsed.value = readLeftSidebarCollapsed()
+    refreshCurrentUser()
     loadKbs()
   }
 })
 
 watch(
-  () => isPublicRoute.value,
-  (v) => {
-    if (!v) loadKbs()
+  () => [isPublicRoute.value, isAdminLayout.value],
+  () => {
+    if (shouldLoadPrivateShell()) {
+      leftSidebarCollapsed.value = readLeftSidebarCollapsed()
+      refreshCurrentUser()
+      loadKbs()
+    }
   }
 )
 
 watch(
   () => [currentKbId.value, strongKbContext.value],
   ([kbId, strong]) => {
-    // 规则：一级页面（概览/搜索/回收站等）强制关闭二级导航；
-    // 仅在 editor / kb 页面，且存在 kbId 时自动打开/切换。
     if (!strong) {
       drawerVisible.value = false
       return
     }
-    if (kbId) {
-      drawerVisible.value = true
-    }
+    drawerVisible.value = Boolean(kbId)
   },
   { immediate: true }
 )
 
 async function loadKbs() {
+  if (!localStorage.getItem('wiki-token')) {
+    kbs.value = []
+    return
+  }
   kbsLoading.value = true
   try {
     kbs.value = await kbApi.mine()
@@ -121,19 +138,40 @@ async function loadKbs() {
   }
 }
 
+async function refreshCurrentUser() {
+  try {
+    const user = await authApi.me()
+    auth.user = user
+    localStorage.setItem('wiki-user', JSON.stringify(user))
+  } catch {
+    // Token handling remains in the HTTP interceptor.
+  }
+}
+
+function shouldLoadPrivateShell() {
+  return !isPublicRoute.value && !isAdminLayout.value && Boolean(localStorage.getItem('wiki-token'))
+}
+
+async function handleCreateKb(payload) {
+  const name = String(payload?.name || '').trim()
+  const type = payload?.type || 'COMPANY'
+  if (!name) return
+  const created = await kbApi.create({
+    name,
+    type,
+    teamId: type === 'DEPARTMENT'
+      ? (payload?.teamId || auth.user?.teamIds?.[0] || auth.user?.departmentId || null)
+      : null
+  })
+  await loadKbs()
+  if (created?.id) {
+    router.push(`/kb/${created.id}`)
+  }
+}
+
 function goToSearch() {
   drawerVisible.value = false
-  router.push('/search')
-}
-
-function goRecycle() {
-  drawerVisible.value = false
-  router.push('/recycle')
-}
-
-function goFavorites() {
-  drawerVisible.value = false
-  router.push('/favorites')
+  router.push(currentKbId.value ? { path: '/search', query: { kbId: currentKbId.value } } : '/search')
 }
 
 function goDashboard() {
@@ -142,11 +180,14 @@ function goDashboard() {
 }
 
 function handleSelectKb(kb) {
-  // 保持当前页面不丢失，同时用 query 记住选择（工作台/搜索页也能复用）
   const kbId = kb?.id
   if (!kbId) return
   drawerVisible.value = true
-  router.push({ path: route.path, params: route.params, query: { ...route.query, kbId } })
+  if (route.path.startsWith('/editor') || route.path.startsWith('/kb/')) {
+    router.push(`/kb/${kbId}`)
+    return
+  }
+  router.push({ path: route.path, query: { ...route.query, kbId } })
 }
 
 function openDocFromDrawer(node) {
@@ -160,8 +201,65 @@ function goKbHome() {
 }
 
 function goCreateDoc() {
-  if (!currentKbId.value) return
+  if (!currentKbId.value) {
+    showToast({ title: '请选择知识库', message: '先从左侧选择一个知识库，再创建文档。', type: 'warning' })
+    return
+  }
   router.push(`/editor/${currentKbId.value}`)
+}
+
+async function renameDocFromDrawer(node) {
+  if (!node?.id) return
+  const value = await promptDialog({
+    title: '重命名文档',
+    message: '请输入新的文档名称。',
+    inputValue: node.title || '',
+    inputPlaceholder: '文档名称',
+    confirmText: '保存'
+  })
+  const title = String(value || '').trim()
+  if (!title || title === node.title) return
+  await docApi.update(node.id, {
+    title,
+    commitMessage: '重命名文档'
+  })
+  drawerRefreshSignal.value++
+  showToast({ title: '已保存', message: '文档名称已更新。', type: 'success' })
+}
+
+async function deleteDocFromDrawer(node) {
+  if (!node?.id) return
+  const ok = await confirmDialog({
+    title: '删除文档',
+    message: `确定删除“${node.title || '未命名文档'}”吗？删除后仅系统管理员可以在后台恢复。`,
+    tone: 'danger',
+    confirmText: '删除',
+    cancelText: '取消'
+  })
+  if (!ok) return
+  await docApi.delete(node.id)
+  drawerRefreshSignal.value++
+  showToast({ title: '已删除', message: '文档已删除。', type: 'success' })
+  if (String(node.id) === String(currentDocId.value)) {
+    goKbHome()
+  }
+}
+
+function readLeftSidebarCollapsed() {
+  try {
+    return localStorage.getItem(LEFT_SIDEBAR_COLLAPSED_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function toggleLeftSidebar() {
+  leftSidebarCollapsed.value = !leftSidebarCollapsed.value
+  try {
+    localStorage.setItem(LEFT_SIDEBAR_COLLAPSED_KEY, leftSidebarCollapsed.value ? '1' : '0')
+  } catch {
+    // 浏览器禁用存储时不影响主流程。
+  }
 }
 </script>
 
@@ -173,7 +271,6 @@ function goCreateDoc() {
 .app-frame {
   display: flex;
   min-height: 100vh;
-  /* 给 KbDrawer 用的定位基准 */
   --sidebar-w: 240px;
 }
 
@@ -189,6 +286,8 @@ function goCreateDoc() {
 }
 
 @media (max-width: 900px) {
-  .main-content { padding: 16px; }
+  .main-content {
+    padding: 16px;
+  }
 }
 </style>

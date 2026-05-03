@@ -16,12 +16,13 @@ import java.time.Duration;
 
 @Service
 public class VerifyCodeService {
+    private static final SecureRandom RANDOM = new SecureRandom();
+
     private final StringRedisTemplate redisTemplate;
     private final AppProperties appProperties;
     private final MailService mailService;
     private final SmsService smsService;
     private final String mailUsername;
-    private static final SecureRandom RANDOM = new SecureRandom();
 
     public VerifyCodeService(StringRedisTemplate redisTemplate,
                              AppProperties appProperties,
@@ -44,14 +45,16 @@ public class VerifyCodeService {
         redisTemplate.opsForValue().set(codeKey(scene, target), code, Duration.ofMinutes(appProperties.getVerifyCodeExpireMinutes()));
 
         VerifyCodeResult result = new VerifyCodeResult();
+        result.setCode(code);
+
         if (isEmail(target) && StringUtils.hasText(mailUsername) && mailService.canSendMail(mailUsername)) {
             try {
                 mailService.sendVerifyCode(mailUsername, target, code);
                 result.setTestMode(false);
-                result.setMessage("验证码已发送，请注意查收");
+                result.setMessage("验证码已发送，当前演示环境已同步返回验证码");
                 return result;
             } catch (Exception ignored) {
-                // fallback to test mode
+                // Fallback to demo mode when the external provider is unavailable.
             }
         }
 
@@ -59,16 +62,15 @@ public class VerifyCodeService {
             try {
                 smsService.sendVerifyCode(target, code);
                 result.setTestMode(false);
-                result.setMessage("验证码已发送，请注意查收");
+                result.setMessage("验证码已发送，当前演示环境已同步返回验证码");
                 return result;
             } catch (Exception ignored) {
-                // fallback to test mode
+                // Fallback to demo mode when the external provider is unavailable.
             }
         }
 
         result.setTestMode(true);
-        result.setCode(code);
-        result.setMessage("当前为测试模式，未配置邮件或短信网关，已直接返回验证码");
+        result.setMessage("当前为演示模式，验证码已直接返回");
         return result;
     }
 
@@ -96,7 +98,7 @@ public class VerifyCodeService {
     private void checkRateLimit(String key, Duration duration) {
         Boolean locked = redisTemplate.opsForValue().setIfAbsent(key, "1", duration);
         if (Boolean.FALSE.equals(locked)) {
-            throw new BusinessException(ErrorCode.RATE_LIMITED, "同一IP/手机号/邮箱 1 分钟内最多请求 1 次");
+            throw new BusinessException(ErrorCode.RATE_LIMITED, "同一 IP 或账号 1 分钟内最多请求 1 次验证码");
         }
     }
 }

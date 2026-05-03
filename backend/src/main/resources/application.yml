@@ -20,8 +20,6 @@ spring:
     redis:
       host: localhost
       port: 6379
-  elasticsearch:
-    uris: ${ES_URIS:http://localhost:9200}
   mail:
     host: ${MAIL_HOST:}
     username: ${MAIL_USERNAME:}
@@ -38,17 +36,34 @@ springdoc:
   swagger-ui:
     path: /swagger-ui.html
 
+management:
+  health:
+    mail:
+      enabled: false
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus
+  endpoint:
+    health:
+      probes:
+        enabled: true
+      show-details: when_authorized
+
 wiki:
-  jwt-secret: CHANGE_ME_TO_A_LONG_RANDOM_SECRET_KEY_32B_PLUS
+  jwt-secret: ${JWT_SECRET:dev-only-change-me-to-a-long-random-secret-key-32b-plus}
   jwt-expire-hours: 24
+  admin-bootstrap-enabled: ${ADMIN_BOOTSTRAP_ENABLED:true}
+  admin-username: ${ADMIN_USERNAME:admin}
+  admin-password: ${ADMIN_PASSWORD:Admin@123456}
+  admin-nickname: ${ADMIN_NICKNAME:System Administrator}
   verify-code-expire-minutes: 5
   verify-code-send-interval-seconds: 60
   recycle-reserve-days: 30
   draft-auto-save-seconds: 30
   local-storage-dir: ./storage/docs
   avatar-storage-dir: ./storage/avatars
-  search-es-enabled: ${SEARCH_ES_ENABLED:false}
-  search-es-reindex-on-startup: ${SEARCH_ES_REINDEX_ON_STARTUP:false}
+  doc-image-storage-dir: ./storage/doc-images
   sms-enabled: false
   sms-gateway-url: ${SMS_GATEWAY_URL:}
   sms-api-key: ${SMS_API_KEY:}

@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>知识库API测试</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; }
+        button { margin: 5px; padding: 8px 15px; cursor: pointer; }
+        .result { margin-top: 10px; padding: 10px; background: #f5f5f5; white-space: pre-wrap; }
+        .error { background: #fee; color: #c00; }
+        .success { background: #efe; color: #060; }
+    </style>
+</head>
+<body>
+    <h1>知识库API测试工具</h1>
+
+    <div class="test-section">
+        <h3>1. 登录状态检查</h3>
+        <button onclick="checkAuth()">检查认证</button>
+        <div id="auth-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>2. 获取我的知识库列表</h3>
+        <button onclick="getMyKbs()">GET /api/kbs/mine</button>
+        <div id="mine-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>3. 创建知识库</h3>
+        <input id="kb-name" placeholder="知识库名称" value="测试知识库">
+        <select id="kb-type">
+            <option value="PRIVATE">私有</option>
+            <option value="DEPARTMENT">部门</option>
+            <option value="COMPANY">公司</option>
+        </select>
+        <button onclick="createKb()">创建</button>
+        <div id="create-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>4. 更新知识库</h3>
+        <input id="update-kb-id" placeholder="知识库ID">
+        <input id="update-kb-name" placeholder="新名称" value="更新后的名称">
+        <button onclick="updateKb()">更新</button>
+        <div id="update-result" class="result"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>5. 删除知识库</h3>
+        <input id="delete-kb-id" placeholder="知识库ID">
+        <button onclick="deleteKb()">删除</button>
+        <div id="delete-result" class="result"></div>
+    </div>
+
+    <script>
+        // 默认走同域 /api；如果需要跨域直连后端，可在控制台执行：
+        //   localStorage.setItem('wiki-api-base', 'http://localhost:8080/api')
+        const API_BASE = (localStorage.getItem('wiki-api-base') || '/api').replace(/\/+$/, '');
+
+        function getToken() {
+            return localStorage.getItem('wiki-token');
+        }
+
+        async function apiCall(method, url, body = null) {
+            const token = getToken();
+            const options = {
+                method,
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            };
+
+            if (token) {
+                options.headers['Authorization'] = `Bearer ${token}`;
+            }
+
+            if (body) {
+                options.body = JSON.stringify(body);
+            }
+
+            try {
+                const response = await fetch(API_BASE + url, options);
+                const data = await response.json();
+                return { status: response.status, data };
+            } catch (error) {
+                return { error: error.message };
+            }
+        }
+
+        async function checkAuth() {
+            const result = document.getElementById('auth-result');
+            const token = getToken();
+
+            if (!token) {
+                result.className = 'result error';
+                result.textContent = '未登录：localStorage中没有找到wiki-token';
+                return;
+            }
+
+            const res = await apiCall('GET', '/auth/me');
+            if (res.error) {
+                result.className = 'result error';
+                result.textContent = '错误: ' + res.error;
+            } else if (res.status === 200 && res.data.success) {
+                result.className = 'result success';
+                result.textContent = '已登录: ' + JSON.stringify(res.data.data, null, 2);
+            } else {
+                result.className = 'result error';
+                result.textContent = 'Token无效或已过期\n' + JSON.stringify(res, null, 2);
+            }
+        }
+
+        async function getMyKbs() {
+            const result = document.getElementById('mine-result');
+            result.textContent = '加载中...';
+
+            const res = await apiCall('GET', '/kbs/mine');
+            if (res.error) {
+                result.className = 'result error';
+                result.textContent = '错误: ' + res.error;
+            } else if (res.status === 200) {
+                result.className = 'result success';
+                result.textContent = '成功获取知识库列表:\n' + JSON.stringify(res.data, null, 2);
+            } else {
+                result.className = 'result error';
+                result.textContent = '请求失败:\n' + JSON.stringify(res, null, 2);
+            }
+        }
+
+        async function createKb() {
+            const result = document.getElementById('create-result');
+            const name = document.getElementById('kb-name').value;
+            const type = document.getElementById('kb-type').value;
+
+            if (!name) {
+                result.className = 'result error';
+                result.textContent = '请输入知识库名称';
+                return;
+            }
+
+            result.textContent = '创建中...';
+
+            const res = await apiCall('POST', '/kbs', {
+                name,
+                type,
+                description: '通过测试工具创建'
+            });
+
+            if (res.error) {
+                result.className = 'result error';
+                result.textContent = '错误: ' + res.error;
+            } else if (res.status === 200) {
+                result.className = 'result success';
+                result.textContent = '创建成功:\n' + JSON.stringify(res.data, null, 2);
+            } else {
+                result.className = 'result error';
+                result.textContent = '创建失败:\n' + JSON.stringify(res, null, 2);
+            }
+        }
+
+        async function updateKb() {
+            const result = document.getElementById('update-result');
+            const kbId = document.getElementById('update-kb-id').value;
+            const name = document.getElementById('update-kb-name').value;
+
+            if (!kbId || !name) {
+                result.className = 'result error';
+                result.textContent = '请输入知识库ID和新名称';
+                return;
+            }
+
+            result.textContent = '更新中...';
+
+            const res = await apiCall('PUT', `/kbs/${kbId}`, {
+                name,
+                type: 'PRIVATE',
+                description: '已更新'
+            });
+
+            if (res.error) {
+                result.className = 'result error';
+                result.textContent = '错误: ' + res.error;
+            } else if (res.status === 200) {
+                result.className = 'result success';
+                result.textContent = '更新成功:\n' + JSON.stringify(res.data, null, 2);
+            } else {
+                result.className = 'result error';
+                result.textContent = '更新失败:\n' + JSON.stringify(res, null, 2);
+            }
+        }
+
+        async function deleteKb() {
+            const result = document.getElementById('delete-result');
+            const kbId = document.getElementById('delete-kb-id').value;
+
+            if (!kbId) {
+                result.className = 'result error';
+                result.textContent = '请输入知识库ID';
+                return;
+            }
+
+            if (!confirm('确定要删除知识库 ' + kbId + ' 吗？')) {
+                return;
+            }
+
+            result.textContent = '删除中...';
+
+            const res = await apiCall('DELETE', `/kbs/${kbId}`);
+
+            if (res.error) {
+                result.className = 'result error';
+                result.textContent = '错误: ' + res.error;
+            } else if (res.status === 200) {
+                result.className = 'result success';
+                result.textContent = '删除成功';
+            } else {
+                result.className = 'result error';
+                result.textContent = '删除失败:\n' + JSON.stringify(res, null, 2);
+            }
+        }
+
+        // 页面加载时自动检查认证状态
+        window.onload = () => {
+            checkAuth();
+        };
+    </script>
+</body>
+</html>

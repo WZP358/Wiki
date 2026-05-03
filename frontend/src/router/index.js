@@ -2,29 +2,35 @@
 import AuthPage from '../views/AuthPage.vue'
 import DashboardPage from '../views/DashboardPage.vue'
 import EditorPage from '../views/EditorPage.vue'
-import RecyclePage from '../views/RecyclePage.vue'
-import AdminLogsPage from '../views/AdminLogsPage.vue'
-import SharePage from '../views/SharePage.vue'
 import ProfilePage from '../views/ProfilePage.vue'
 import SearchPage from '../views/SearchPage.vue'
 import KbHomePage from '../views/KbHomePage.vue'
 import UserHomePage from '../views/UserHomePage.vue'
 import SettingsPage from '../views/SettingsPage.vue'
-import FavoritesPage from '../views/FavoritesPage.vue'
+
+const ADMIN_APP_URL = import.meta.env.VITE_ADMIN_APP_URL || 'http://localhost:5181'
+
+function openAdminApp() {
+  window.location.href = ADMIN_APP_URL
+}
 
 const routes = [
   { path: '/auth', component: AuthPage, meta: { public: true } },
-  { path: '/share/:token', component: SharePage, meta: { public: true } },
   { path: '/', component: DashboardPage },
   { path: '/editor/:kbId/:docId?', component: EditorPage },
   { path: '/search', component: SearchPage },
-  { path: '/favorites', component: FavoritesPage },
   { path: '/kb/:kbId', component: KbHomePage },
   { path: '/user/:userId', component: UserHomePage },
   { path: '/settings/:kbId?', component: SettingsPage },
-  { path: '/recycle', component: RecyclePage },
   { path: '/profile', component: ProfilePage },
-  { path: '/admin/logs', component: AdminLogsPage, meta: { admin: true } }
+  {
+    path: '/admin/:pathMatch(.*)*',
+    meta: { public: true },
+    beforeEnter: () => {
+      openAdminApp()
+      return false
+    }
+  }
 ]
 
 const router = createRouter({
@@ -40,13 +46,6 @@ router.beforeEach((to) => {
   const token = localStorage.getItem('wiki-token')
   if (!token) {
     return '/auth'
-  }
-
-  if (to.meta.admin) {
-    const user = JSON.parse(localStorage.getItem('wiki-user') || 'null')
-    if (user?.role !== 'ADMIN') {
-      return '/'
-    }
   }
 
   return true

@@ -1,378 +1,295 @@
 <template>
-  <div class="kb-home">
-    <header class="kb-header">
-      <button class="back-btn" @click="$router.back()">←</button>
-      <div class="kb-info" v-if="kb">
-        <div class="kb-avatar-mini" :class="getKbClass(kb.type)">
-          {{ kb.name.charAt(0).toUpperCase() }}
-        </div>
-        <div class="meta">
-          <h2>{{ kb.name }}</h2>
-          <p class="sub">
-            <span>{{ typeText }}</span>
-            <span v-if="kb.description" class="dot">·</span>
-            <span v-if="kb.description">{{ kb.description }}</span>
-          </p>
-        </div>
-      </div>
-    </header>
+  <main class="app-container kb-home">
+    <el-skeleton v-if="loading" :rows="8" animated />
 
-    <main class="kb-content" v-if="kb">
-      <section class="section">
-        <div class="section-header">
-          <h3>空间概览</h3>
-          <div class="actions">
-            <button class="btn-link" @click="renameKb">重命名</button>
-            <button class="btn-link danger" @click="deleteKb">删除</button>
-          </div>
-        </div>
-        <div class="stats">
-          <div class="stat-item">
-            <div class="label">最近更新</div>
-            <div class="value">{{ latestDocs.length }} 篇</div>
-          </div>
-          <div class="stat-item">
-            <div class="label">热门文档</div>
-            <div class="value">{{ hotDocs.length }} 篇</div>
-          </div>
-          <div class="stat-item">
-            <div class="label">成员</div>
-            <div class="value">{{ members.length }}</div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section two-column">
-        <div class="col">
-          <div class="section-header">
-            <h3>最近更新</h3>
-          </div>
-          <div class="doc-list">
-            <div
-              v-for="doc in latestDocs"
-              :key="doc.id"
-              class="doc-row"
-              @click="openDoc(doc.id)"
-            >
-              <div class="title">{{ doc.title }}</div>
-            </div>
-            <div v-if="latestDocs.length === 0" class="empty-tip">暂无最近更新</div>
-          </div>
-        </div>
-        <div class="col">
-          <div class="section-header">
-            <h3>热门文档</h3>
-          </div>
-          <div class="doc-list">
-            <div
-              v-for="doc in hotDocs"
-              :key="doc.id"
-              class="doc-row"
-              @click="openDoc(doc.id)"
-            >
-              <div class="title">{{ doc.title }}</div>
-            </div>
-            <div v-if="hotDocs.length === 0" class="empty-tip">暂无热门文档</div>
-          </div>
-        </div>
-      </section>
-
-      <section class="section">
-        <div class="section-header">
-          <h3>成员</h3>
-        </div>
-        <div class="member-list">
-          <div
-            v-for="m in members"
-            :key="m.userId"
-            class="member-item"
-          >
-            <div class="avatar">{{ (m.nickname || m.username || '?').slice(0,1) }}</div>
-            <div class="info">
-              <div class="name">{{ m.nickname || m.username }}</div>
-              <div class="role">{{ m.role }}</div>
+    <el-card v-else-if="kb" shadow="never" class="kb-card">
+      <template #header>
+        <div class="kb-header">
+          <div class="kb-heading">
+            <el-avatar shape="square" :class="getKbClass(kb.type)">{{ kb.name.slice(0, 1).toUpperCase() }}</el-avatar>
+            <div class="kb-title">
+              <h1>{{ kb.name }}</h1>
+              <div class="meta-line">
+                <el-tag size="small" effect="plain">{{ typeText }}</el-tag>
+                <el-tag size="small" :type="roleTagType(kb.myRole)" effect="plain">{{ myRoleText }}</el-tag>
+                <span>{{ kb.description || '暂无描述' }}</span>
+              </div>
             </div>
           </div>
-          <div v-if="members.length === 0" class="empty-tip">暂无成员信息</div>
+          <div class="header-actions">
+            <el-button @click="router.push('/')">返回首页</el-button>
+            <el-button type="primary" :disabled="!canEdit" @click="createDoc">新建文档</el-button>
+            <el-button v-if="canManage" @click="createChildKb">新建子知识库</el-button>
+            <el-button v-if="canManage" @click="router.push(`/settings/${kbId}`)">成员与设置</el-button>
+            <el-button v-if="canManage" @click="renameKb">重命名</el-button>
+            <el-button v-if="canManage" type="danger" plain @click="deleteKb">停用</el-button>
+          </div>
         </div>
-      </section>
-    </main>
-  </div>
+      </template>
+
+      <el-alert
+        v-if="!canEdit"
+        class="readonly-alert"
+        title="你当前对该知识库只有查看权限。可见只代表能阅读；创建和编辑必须由知识库管理员授予编辑或管理角色。"
+        type="info"
+        :closable="false"
+        show-icon
+      />
+
+      <el-card shadow="never" class="inner-card">
+        <template #header>
+          <div class="ry-card-header">
+            <span>子知识库</span>
+            <span class="ry-muted">用于表达项目下的前端、后端、任务组等独立协作空间，点击后直接进入对应知识库。</span>
+          </div>
+        </template>
+        <el-empty v-if="childKbs.length === 0" description="暂无子知识库" :image-size="80" />
+        <div v-else class="child-grid">
+          <button v-for="child in childKbs" :key="child.id" type="button" class="child-kb" @click="router.push(`/kb/${child.id}`)">
+            <span class="kb-mini" :class="getKbClass(child.type)">{{ (child.name || 'K').slice(0, 1).toUpperCase() }}</span>
+            <span>
+              <strong>{{ child.name }}</strong>
+              <small>{{ child.description || kbTypeLabel(child.type) }}</small>
+            </span>
+            <el-tag size="small" :type="roleTagType(child.myRole)" effect="plain">{{ roleLabel(child.myRole) }}</el-tag>
+          </button>
+        </div>
+      </el-card>
+
+      <el-row :gutter="16">
+        <el-col :xs="24" :lg="12">
+          <el-card shadow="never" class="inner-card">
+            <template #header><span>最近更新</span></template>
+            <el-empty v-if="latestDocs.length === 0" description="暂无最近更新文档" :image-size="80" />
+            <el-table v-else :data="latestDocs.slice(0, 5)" size="small" @row-click="row => openDoc(row.id)">
+              <el-table-column prop="title" label="文档标题" min-width="180" show-overflow-tooltip />
+              <el-table-column prop="versionNo" label="版本" width="80">
+                <template #default="{ row }">v{{ row.versionNo || 1 }}</template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+        </el-col>
+
+        <el-col :xs="24" :lg="12">
+          <el-card shadow="never" class="inner-card">
+            <template #header><span>热门文档</span></template>
+            <el-empty v-if="hotDocs.length === 0" description="暂无热门文档" :image-size="80" />
+            <el-table v-else :data="hotDocs.slice(0, 5)" size="small" @row-click="row => openDoc(row.id)">
+              <el-table-column prop="title" label="文档标题" min-width="180" show-overflow-tooltip />
+              <el-table-column prop="viewCount" label="阅读" width="90">
+                <template #default="{ row }">{{ row.viewCount || 0 }}</template>
+              </el-table-column>
+            </el-table>
+          </el-card>
+        </el-col>
+      </el-row>
+
+      <el-card shadow="never" class="inner-card members-card">
+        <template #header>
+          <div class="ry-card-header">
+            <span>协作成员</span>
+            <span class="ry-muted">只展示已加入协作名单的普通用户。</span>
+          </div>
+        </template>
+        <el-empty v-if="members.length === 0" description="暂无协作成员，请知识库管理员邀请普通用户。" :image-size="80" />
+        <el-table v-else :data="members" size="small">
+          <el-table-column label="姓名" min-width="160" show-overflow-tooltip>
+            <template #default="{ row }">
+              <div class="member-cell">
+                <el-avatar :size="30" :src="row.avatarUrl">{{ memberInitial(row) }}</el-avatar>
+                <div>
+                  <strong>{{ row.displayName || row.nickname || row.username || row.userId }}</strong>
+                  <span>{{ row.username || '-' }}</span>
+                </div>
+              </div>
+            </template>
+          </el-table-column>
+          <el-table-column prop="departmentName" label="团队" min-width="140" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.departmentName || '未分配团队' }}</template>
+          </el-table-column>
+          <el-table-column prop="positionName" label="职位" min-width="120" show-overflow-tooltip>
+            <template #default="{ row }">{{ row.positionName || '普通成员' }}</template>
+          </el-table-column>
+          <el-table-column label="权限" width="110">
+            <template #default="{ row }">
+              <el-tag size="small" :type="roleTagType(row.role)" effect="plain">{{ roleLabel(row.role) }}</el-tag>
+            </template>
+          </el-table-column>
+        </el-table>
+      </el-card>
+    </el-card>
+  </main>
 </template>
 
 <script setup>
-import { computed, onMounted, ref } from 'vue'
+import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { ElMessageBox } from 'element-plus'
 import { kbApi, docApi } from '../api/modules'
+import { showToast } from '../utils/errorBus'
 
 const route = useRoute()
 const router = useRouter()
+const kbId = computed(() => route.params.kbId)
 
-const kbId = route.params.kbId
-
+const loading = ref(false)
 const kb = ref(null)
+const childKbs = ref([])
 const latestDocs = ref([])
 const hotDocs = ref([])
 const members = ref([])
 
-const typeText = computed(() => {
-  if (!kb.value) return ''
-  if (kb.value.type === 'COMPANY') return '公司公开'
-  if (kb.value.type === 'DEPARTMENT') return '部门空间'
-  if (kb.value.type === 'PRIVATE') return '私有空间'
-  return ''
-})
+const canManage = computed(() => kb.value?.myRole === 'ADMIN')
+const canEdit = computed(() => ['ADMIN', 'EDITOR'].includes(kb.value?.myRole))
+const typeText = computed(() => kbTypeLabel(kb.value?.type))
+const myRoleText = computed(() => roleLabel(kb.value?.myRole || 'READER'))
+
+onMounted(load)
+watch(kbId, load)
+
+async function load() {
+  if (!kbId.value) return
+  loading.value = true
+  try {
+    kb.value = await kbApi.get(kbId.value)
+    const [children, latest, hot, memberList] = await Promise.all([
+      kbApi.children(kbId.value),
+      docApi.latest(kbId.value),
+      docApi.hot(kbId.value),
+      kbApi.members(kbId.value)
+    ])
+    childKbs.value = Array.isArray(children) ? children : []
+    latestDocs.value = Array.isArray(latest) ? latest : []
+    hotDocs.value = Array.isArray(hot) ? hot : []
+    members.value = Array.isArray(memberList) ? memberList : []
+  } finally {
+    loading.value = false
+  }
+}
 
 function getKbClass(type) {
-  const map = {
-    COMPANY: 'kb-company',
-    DEPARTMENT: 'kb-department',
-    PRIVATE: 'kb-private'
-  }
-  return map[type] || 'kb-company'
+  return { COMPANY: 'company', DEPARTMENT: 'department', PRIVATE: 'private' }[type] || 'company'
+}
+
+function kbTypeLabel(type) {
+  return {
+    COMPANY: '公开知识库',
+    DEPARTMENT: '团队知识库',
+    PRIVATE: '私有知识库'
+  }[type] || '知识库'
+}
+
+function roleLabel(role) {
+  return {
+    READER: '查看',
+    VIEWER: '查看',
+    EDITOR: '编辑',
+    ADMIN: '管理'
+  }[role] || role || '查看'
+}
+
+function roleTagType(role) {
+  return {
+    ADMIN: 'warning',
+    EDITOR: 'success',
+    READER: 'info',
+    VIEWER: 'info'
+  }[role] || 'info'
+}
+
+function memberInitial(member) {
+  return String(member.displayName || member.nickname || member.username || '?').slice(0, 1)
 }
 
 function openDoc(docId) {
-  router.push(`/editor/${kbId}/${docId}`)
+  router.push(`/editor/${kbId.value}/${docId}`)
 }
 
-onMounted(async () => {
-  kb.value = await kbApi.get(kbId)
-  latestDocs.value = await docApi.latest(kbId)
-  hotDocs.value = await docApi.hot(kbId)
-  members.value = await kbApi.members(kbId)
-})
+function createDoc() {
+  if (!canEdit.value) {
+    showToast({ title: '只读权限', message: '你需要加入协作名单并拥有编辑或管理权限后才能新建文档。', type: 'warning' })
+    return
+  }
+  router.push(`/editor/${kbId.value}`)
+}
+
+async function createChildKb() {
+  if (!kb.value) return
+  const { value } = await ElMessageBox.prompt('请输入子知识库名称。', '新建子知识库', {
+    confirmButtonText: '创建',
+    cancelButtonText: '取消',
+    inputPattern: /\S+/,
+    inputErrorMessage: '知识库名称不能为空'
+  }).catch(() => ({}))
+  if (!value) return
+  const child = await kbApi.create({
+    name: value,
+    type: kb.value.type,
+    description: `隶属于 ${kb.value.name}`,
+    parentId: kb.value.id,
+    teamId: kb.value.type === 'DEPARTMENT' ? kb.value.teamId : null
+  })
+  showToast({ title: '已创建', message: '子知识库已创建，可独立邀请成员和维护权限。', type: 'success' })
+  router.push(`/kb/${child.id}`)
+}
 
 async function renameKb() {
   if (!kb.value) return
-  const name = window.prompt('请输入新的知识库名称', kb.value.name)
-  if (!name) return
-  const updated = await kbApi.update(kbId, {
-    name,
+  const { value } = await ElMessageBox.prompt('请输入新的知识库名称。', '重命名知识库', {
+    confirmButtonText: '保存',
+    cancelButtonText: '取消',
+    inputValue: kb.value.name,
+    inputPattern: /\S+/,
+    inputErrorMessage: '知识库名称不能为空'
+  }).catch(() => ({}))
+  if (!value) return
+  kb.value = await kbApi.update(kbId.value, {
+    name: value,
     type: kb.value.type,
-    description: kb.value.description
+    description: kb.value.description,
+    parentId: kb.value.parentId
   })
-  kb.value = updated
+  showToast({ title: '已保存', message: '知识库名称已更新。', type: 'success' })
 }
 
 async function deleteKb() {
   if (!kb.value) return
-  if (!window.confirm('删除知识库会将其中的文档一并移入回收站，确定删除吗？')) return
-  await kbApi.remove(kbId)
+  await ElMessageBox.confirm('停用后知识库不会出现在普通列表中，系统管理员仍可在后台查看和恢复。', '停用知识库', {
+    confirmButtonText: '停用',
+    cancelButtonText: '取消',
+    type: 'warning'
+  }).catch(() => Promise.reject(new Error('cancel')))
+  await kbApi.remove(kbId.value)
+  showToast({ title: '已停用', message: '知识库已停用。', type: 'success' })
   router.push('/')
 }
 </script>
 
 <style scoped>
-.kb-home {
-  min-height: 100vh;
-  background: var(--bg);
-}
-
-.kb-header {
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 24px;
-  border-bottom: 1px solid var(--line);
-  background: var(--panel);
-}
-
-.back-btn {
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  border: none;
-  background: transparent;
-  color: var(--text-secondary);
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.kb-info {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.kb-avatar-mini {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 16px;
-  font-weight: 600;
-  color: #fff;
-}
-
-.kb-company {
-  background: linear-gradient(135deg, #1890ff, #40a9ff);
-}
-.kb-department {
-  background: linear-gradient(135deg, #52c41a, #73d13d);
-}
-.kb-private {
-  background: linear-gradient(135deg, #faad14, #ffc53d);
-}
-
-.meta h2 {
-  margin: 0;
-  font-size: 18px;
-}
-
-.sub {
-  margin: 4px 0 0 0;
-  font-size: 13px;
-  color: var(--text-secondary);
-}
-
-.dot::before {
-  content: '·';
-  margin: 0 4px;
-}
-
-.kb-content {
-  max-width: 1100px;
-  margin: 0 auto;
-  padding: 24px 16px 40px;
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.section {
-  background: var(--panel);
-  border: 1px solid var(--line);
-  border-radius: 8px;
-  padding: 18px 20px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 12px;
-}
-
-.actions {
-  display: flex;
-  gap: 8px;
-}
-
-.btn-link {
-  border: none;
-  background: transparent;
-  color: var(--brand);
-  font-size: 13px;
-  cursor: pointer;
-}
-
-.btn-link.danger {
-  color: #ff7875;
-}
-
-.section-header h3 {
-  margin: 0;
-  font-size: 15px;
-}
-
-.stats {
-  display: flex;
-  gap: 24px;
-}
-
-.stat-item {
-  min-width: 120px;
-}
-
-.label {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.value {
-  margin-top: 4px;
-  font-size: 18px;
-  font-weight: 600;
-}
-
-.two-column {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 16px;
-}
-
-.col {
-  min-width: 0;
-}
-
-.doc-list {
-  max-height: 260px;
-  overflow-y: auto;
-}
-
-.doc-row {
-  padding: 6px 4px;
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 13px;
-  color: var(--text);
-}
-
-.doc-row:hover {
-  background: var(--line-light);
-}
-
-.title {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.empty-tip {
-  padding: 24px 0;
-  text-align: center;
-  font-size: 13px;
-  color: var(--muted);
-}
-
-.member-list {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-}
-
-.member-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 8px;
-  border-radius: 6px;
-  background: var(--bg);
-}
-
-.member-item .avatar {
-  width: 24px;
-  height: 24px;
-  border-radius: 50%;
-  background: var(--brand-soft);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 13px;
-}
-
-.member-item .name {
-  font-size: 13px;
-}
-
-.member-item .role {
-  font-size: 12px;
-  color: var(--text-secondary);
-}
+.kb-home { max-width: 1280px; margin: 0 auto; }
+.kb-card { min-height: 420px; }
+.readonly-alert { margin-bottom: 16px; }
+.kb-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; }
+.kb-heading { min-width: 0; display: flex; align-items: center; gap: 12px; }
+.kb-title { min-width: 0; }
+.kb-title h1 { margin-bottom: 6px; color: #1f2d3d; font-size: 21px; }
+.meta-line { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; color: #606266; }
+.header-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+.el-avatar.company, .kb-mini.company { background: #409eff; }
+.el-avatar.department, .kb-mini.department { background: #67c23a; }
+.el-avatar.private, .kb-mini.private { background: #e6a23c; }
+.inner-card { margin-top: 16px; }
+.child-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+.child-kb { min-height: 74px; border: 1px solid #ebeef5; border-radius: 6px; display: grid; grid-template-columns: 38px minmax(0, 1fr) auto; align-items: center; gap: 12px; padding: 12px; background: #fff; text-align: left; cursor: pointer; }
+.child-kb:hover { border-color: #409eff; background: #f5faff; }
+.kb-mini { width: 38px; height: 38px; border-radius: 6px; display: grid; place-items: center; color: #fff; font-weight: 700; }
+.child-kb span:nth-child(2) { min-width: 0; display: grid; gap: 3px; }
+.child-kb strong, .child-kb small { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.child-kb small { color: #909399; }
+.member-cell { display: flex; align-items: center; gap: 10px; }
+.member-cell div { min-width: 0; display: grid; gap: 2px; }
+.member-cell strong, .member-cell span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.member-cell span { color: #909399; font-size: 12px; }
+:deep(.el-table__row) { cursor: pointer; }
+@media (max-width: 900px) { .kb-header { align-items: flex-start; flex-direction: column; } }
 </style>
-

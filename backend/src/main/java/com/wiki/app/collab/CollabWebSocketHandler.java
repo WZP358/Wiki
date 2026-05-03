@@ -60,6 +60,7 @@ public class CollabWebSocketHandler extends TextWebSocketHandler {
             case "join" -> handleJoin(session, node);
             case "update" -> handleUpdate(session, node);
             case "cursor" -> handleCursor(session, node);
+            case "nudge" -> handleNudge(session, node);
             case "leave" -> leaveRoom(session.getId());
             default -> send(session, Map.of("type", "error", "message", "unknown message type"));
         }
@@ -228,6 +229,59 @@ public class CollabWebSocketHandler extends TextWebSocketHandler {
                 "type", "cursor",
                 "docId", docId,
                 "participant", participant
+        ));
+    }
+
+    private void handleNudge(WebSocketSession session, JsonNode node) throws IOException {
+        CurrentUser fromUser = users.get(session.getId());
+        Long docId = sessionDoc.get(session.getId());
+        if (fromUser == null || docId == null) {
+            return;
+        }
+
+        String targetUsername = node.path("to").asText("");
+        if (targetUsername.isBlank()) {
+            send(session, Map.of(
+                    "type", "nudge_unavailable",
+                    "message", "没有找到可提醒的编辑人"
+            ));
+            return;
+        }
+
+        CollabRoom room = rooms.get(docId);
+        if (room == null) {
+            send(session, Map.of(
+                    "type", "nudge_unavailable",
+                    "message", "对方当前不在线，暂时无法提醒"
+            ));
+            return;
+        }
+
+        for (CollabParticipant participant : room.getParticipants().values()) {
+            if (!targetUsername.equals(participant.getUsername())) {
+                continue;
+            }
+            WebSocketSession targetSession = sessions.get(participant.getSessionId());
+            if (targetSession == null || !targetSession.isOpen()) {
+                continue;
+            }
+            send(targetSession, Map.of(
+                    "type", "nudge",
+                    "docId", docId,
+                    "from", fromUser.getUsername(),
+                    "message", fromUser.getUsername() + " 想编辑这篇文档，请完成后释放编辑锁"
+            ));
+            send(session, Map.of(
+                    "type", "nudge_sent",
+                    "docId", docId,
+                    "to", targetUsername
+            ));
+            return;
+        }
+
+        send(session, Map.of(
+                "type", "nudge_unavailable",
+                "message", "对方当前不在线，暂时无法提醒"
         ));
     }
 

@@ -18,6 +18,7 @@ public class AppProperties {
     private long draftAutoSaveSeconds = 30;
     private String localStorageDir = "./storage/docs";
     private String avatarStorageDir = "./storage/avatars";
+    private String docImageStorageDir = "./storage/doc-images";
     private boolean searchEsEnabled = false;
     private boolean searchEsReindexOnStartup = false;
     private boolean smsEnabled = false;

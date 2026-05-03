@@ -5,16 +5,22 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.wiki.app.common.BusinessException;
 import com.wiki.app.common.ErrorCode;
 import com.wiki.app.common.SnowflakeIdGenerator;
+import com.wiki.app.dept.Department;
+import com.wiki.app.dept.DepartmentRepository;
 import com.wiki.app.doc.search.IDocumentSearchService;
 import com.wiki.app.doc.dto.*;
 import com.wiki.app.kb.KnowledgeBase;
+import com.wiki.app.kb.KnowledgeBaseMemberRepository;
 import com.wiki.app.kb.KnowledgeBaseRepository;
 import com.wiki.app.kb.KnowledgeBaseService;
 import com.wiki.app.kb.KnowledgeBaseType;
+import com.wiki.app.kb.MemberRole;
 import com.wiki.app.log.OperationLogService;
 import com.wiki.app.security.CurrentUser;
 import com.wiki.app.user.UserAccount;
 import com.wiki.app.user.UserRepository;
+import com.wiki.app.user.UserTeamMembership;
+import com.wiki.app.user.UserTeamMembershipRepository;
 import jakarta.transaction.Transactional;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
@@ -22,15 +28,18 @@ import org.springframework.stereotype.Service;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.UUID;
 
 @Service
 public class DocumentService {
     private static final Duration LIST_CACHE_TTL = Duration.ofMinutes(10);
+    private static final Duration SEARCH_CACHE_TTL = Duration.ofMinutes(3);
     private static final Duration HTML_CACHE_TTL = Duration.ofHours(12);
     private static final Duration LOCK_TTL = Duration.ofMinutes(30);
 
@@ -41,7 +50,10 @@ public class DocumentService {
     private final DocumentEditLogRepository editLogRepository;
     private final KnowledgeBaseService knowledgeBaseService;
     private final KnowledgeBaseRepository knowledgeBaseRepository;
+    private final KnowledgeBaseMemberRepository knowledgeBaseMemberRepository;
     private final UserRepository userRepository;
+    private final UserTeamMembershipRepository teamMembershipRepository;
+    private final DepartmentRepository departmentRepository;
     private final MarkdownService markdownService;
     private final SnowflakeIdGenerator idGenerator;
     private final StringRedisTemplate redisTemplate;
@@ -55,10 +67,13 @@ public class DocumentService {
                            DocumentVersionRepository versionRepository,
                            DocumentDraftRepository draftRepository,
                            DocumentViewLogRepository viewLogRepository,
-                           DocumentEditLogRepository editLogRepository,
-                           KnowledgeBaseService knowledgeBaseService,
-                           KnowledgeBaseRepository knowledgeBaseRepository,
-                           UserRepository userRepository,
+                            DocumentEditLogRepository editLogRepository,
+                            KnowledgeBaseService knowledgeBaseService,
+                            KnowledgeBaseRepository knowledgeBaseRepository,
+                            KnowledgeBaseMemberRepository knowledgeBaseMemberRepository,
+                            UserRepository userRepository,
+                            UserTeamMembershipRepository teamMembershipRepository,
+                           DepartmentRepository departmentRepository,
                            MarkdownService markdownService,
                            SnowflakeIdGenerator idGenerator,
                            StringRedisTemplate redisTemplate,
@@ -74,7 +89,10 @@ public class DocumentService {
         this.editLogRepository = editLogRepository;
         this.knowledgeBaseService = knowledgeBaseService;
         this.knowledgeBaseRepository = knowledgeBaseRepository;
+        this.knowledgeBaseMemberRepository = knowledgeBaseMemberRepository;
         this.userRepository = userRepository;
+        this.teamMembershipRepository = teamMembershipRepository;
+        this.departmentRepository = departmentRepository;
         this.markdownService = markdownService;
         this.idGenerator = idGenerator;
         this.redisTemplate = redisTemplate;
@@ -93,11 +111,11 @@ public class DocumentService {
         doc.setId(idGenerator.nextId());
         doc.setKbId(request.getKbId());
         doc.setParentId(request.getParentId());
-        doc.setTitle(request.getTitle());
+        doc.setTitle(uniqueTitle(request.getKbId(), request.getTitle(), null));
         doc.setMarkdownContent(request.getMarkdownContent());
         doc.setHtmlContent(markdownService.toHtml(request.getMarkdownContent()));
         doc.setOwnerId(user.getUserId());
-        doc.setVisibility(request.getVisibility());
+        doc.setVisibility(request.getVisibility() == null ? DocVisibility.PRIVATE : request.getVisibility());
         doc.setPublished(Boolean.TRUE.equals(request.getPublished()));
         doc.setVersionNo(1);
         doc.setViewCount(0L);
@@ -105,6 +123,7 @@ public class DocumentService {
 
         snapshot(doc, user, "Create document");
         invalidateListCache(doc.getKbId());
+        markCacheChanged(doc.getKbId());
         cacheHtml(doc);
         documentSearchService.upsert(doc);
 
@@ -138,6 +157,7 @@ public class DocumentService {
         doc.setViewCount(viewCount + 1);
         documentRepository.save(doc);
         redisTemplate.delete(hotKey(doc.getKbId()));
+        markCacheChanged(doc.getKbId());
 
         // 记录查看日志
         logView(doc, user, ip, userAgent);
@@ -164,7 +184,7 @@ public class DocumentService {
         int oldLength = doc.getMarkdownContent().length();
 
         if (request.getTitle() != null) {
-            doc.setTitle(request.getTitle());
+            doc.setTitle(uniqueTitle(doc.getKbId(), request.getTitle(), doc.getId()));
         }
         if (request.getMarkdownContent() != null) {
             doc.setMarkdownContent(request.getMarkdownContent());
@@ -181,6 +201,7 @@ public class DocumentService {
         documentRepository.save(doc);
         snapshot(doc, user, request.getCommitMessage() == null ? "Update document" : request.getCommitMessage());
         invalidateListCache(doc.getKbId());
+        markCacheChanged(doc.getKbId());
         cacheHtml(doc);
         documentSearchService.upsert(doc);
 
@@ -194,7 +215,7 @@ public class DocumentService {
     @Transactional
     public void delete(Long docId, CurrentUser user, String ip) {
         WikiDocument doc = loadActive(docId);
-        ensureEditable(doc, user);
+        ensureDeletable(doc, user);
 
         // 记录删除日志
         logEdit(doc, user, "DELETE", doc.getTitle(), null, doc.getMarkdownContent().length(), 0, ip, "Delete document");
@@ -202,6 +223,7 @@ public class DocumentService {
         doc.setDeletedAt(LocalDateTime.now());
         documentRepository.save(doc);
         invalidateListCache(doc.getKbId());
+        markCacheChanged(doc.getKbId());
         redisTemplate.delete(htmlKey(doc.getId()));
         redisTemplate.delete(lockKey(doc.getId()));
         documentSearchService.markDeleted(doc.getId());
@@ -209,8 +231,12 @@ public class DocumentService {
     }
 
     public List<DocumentResponse> recycle(CurrentUser user) {
-        return documentRepository.findByOwnerIdAndDeletedAtIsNotNullOrderByDeletedAtDesc(user.getUserId())
+        if (!user.isAdmin()) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "Only administrators can view deleted documents");
+        }
+        return documentRepository.findAll()
                 .stream()
+                .filter(doc -> doc.getDeletedAt() != null)
                 .map(this::toResponse)
                 .toList();
     }
@@ -222,12 +248,13 @@ public class DocumentService {
         if (doc.getDeletedAt() == null) {
             throw new BusinessException(ErrorCode.BAD_REQUEST, "Document is not in recycle bin");
         }
-        if (!doc.getOwnerId().equals(user.getUserId()) && !user.isAdmin()) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "Only owner or admin can restore document");
+        if (!user.isAdmin()) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "Only administrators can restore document");
         }
         doc.setDeletedAt(null);
         documentRepository.save(doc);
         invalidateListCache(doc.getKbId());
+        markCacheChanged(doc.getKbId());
         documentSearchService.upsert(doc);
         operationLogService.record(user.getUserId(), user.getUsername(), "RESTORE_DOC", "DOC", doc.getId().toString(), ip, doc.getTitle());
         return toResponse(doc);
@@ -235,24 +262,7 @@ public class DocumentService {
 
     @Transactional
     public void purge(Long docId, CurrentUser user, boolean confirmed, String ip) {
-        if (!confirmed) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "This operation is irreversible. Please confirm before purging");
-        }
-
-        WikiDocument doc = documentRepository.findById(docId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Document not found"));
-        if (!doc.getOwnerId().equals(user.getUserId()) && !user.isAdmin()) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "Only owner or admin can purge document");
-        }
-
-        versionRepository.deleteByDocId(docId);
-        draftRepository.deleteByDocId(docId);
-        documentRepository.delete(doc);
-        redisTemplate.delete(htmlKey(docId));
-        redisTemplate.delete(lockKey(docId));
-        documentSearchService.delete(docId);
-        asyncCleanupService.cleanupDocumentArtifacts(docId);
-        operationLogService.record(user.getUserId(), user.getUsername(), "PURGE_DOC", "DOC", docId.toString(), ip, doc.getTitle());
+        throw new BusinessException(ErrorCode.FORBIDDEN, "Documents are soft-deleted only and cannot be purged");
     }
 
     public List<DocumentVersionResponse> versions(Long docId, CurrentUser user) {
@@ -284,7 +294,7 @@ public class DocumentService {
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Right version not found"));
 
         if (!left.getDocId().equals(docId) || !right.getDocId().equals(docId)) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "闁绘鐗婂﹢鐗堢▔鎼淬垺鐎俊妤嬬导缁楀宕犺ぐ鎺戝赋");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "Version does not belong to this document");
         }
 
         List<DiffLineResponse> lines = diffByLine(left.getMarkdownContent(), right.getMarkdownContent());
@@ -306,17 +316,18 @@ public class DocumentService {
         DocumentVersion version = versionRepository.findById(versionId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "History version not found"));
         if (!version.getDocId().equals(docId)) {
-            throw new BusinessException(ErrorCode.BAD_REQUEST, "闁绘鐗婂﹢鐗堢▔鎼淬垺鐎俊妤嬬导缁楀宕犺ぐ鎺戝赋");
+            throw new BusinessException(ErrorCode.BAD_REQUEST, "Version does not belong to this document");
         }
 
-        doc.setTitle(version.getTitle());
+        doc.setTitle(uniqueTitle(doc.getKbId(), version.getTitle(), doc.getId()));
         doc.setMarkdownContent(version.getMarkdownContent());
         doc.setHtmlContent(version.getHtmlContent());
         doc.setVersionNo(doc.getVersionNo() + 1);
         documentRepository.save(doc);
 
-        snapshot(doc, user, "闁搞儳鍋炵划鎾礆閹殿喖顣奸柡?v" + version.getVersionNo());
+        snapshot(doc, user, "Rollback to v" + version.getVersionNo());
         invalidateListCache(doc.getKbId());
+        markCacheChanged(doc.getKbId());
         cacheHtml(doc);
         documentSearchService.upsert(doc);
         operationLogService.record(user.getUserId(), user.getUsername(), "ROLLBACK_DOC", "DOC", doc.getId().toString(), ip, "Rollback to version " + version.getVersionNo());
@@ -325,21 +336,27 @@ public class DocumentService {
 
     public List<DocumentResponse> search(Long kbId, String keyword, CurrentUser user) {
         knowledgeBaseService.ensureKbVisible(kbId, user);
-        return searchDocs(kbId, keyword)
+        return searchDocsWithCache(kbId, keyword)
                 .stream()
                 .filter(doc -> canRead(doc, user))
-                .map(this::toResponse)
+                .map(doc -> toSearchResponse(doc, keyword))
                 .toList();
     }
 
     public List<DocumentResponse> latest(Long kbId, CurrentUser user) {
         knowledgeBaseService.ensureKbVisible(kbId, user);
-        return listWithCache(kbId, latestKey(kbId), () -> documentRepository.findTop10ByKbIdAndDeletedAtIsNullOrderByUpdatedAtDesc(kbId), user);
+        return listWithCache(kbId, latestKey(kbId), () -> documentRepository.findTop10ByKbIdAndDeletedAtIsNullOrderByUpdatedAtDesc(kbId)
+                .stream()
+                .limit(5)
+                .toList(), user);
     }
 
     public List<DocumentResponse> hot(Long kbId, CurrentUser user) {
         knowledgeBaseService.ensureKbVisible(kbId, user);
-        return listWithCache(kbId, hotKey(kbId), () -> documentRepository.findTop10ByKbIdAndDeletedAtIsNullOrderByViewCountDesc(kbId), user);
+        return listWithCache(kbId, hotKey(kbId), () -> documentRepository.findTop10ByKbIdAndDeletedAtIsNullOrderByViewCountDesc(kbId)
+                .stream()
+                .limit(5)
+                .toList(), user);
     }
 
     public EditLockResponse lock(Long docId, CurrentUser user) {
@@ -347,15 +364,23 @@ public class DocumentService {
         ensureEditable(doc, user);
         String key = lockKey(docId);
         String lockOwner = redisTemplate.opsForValue().get(key);
-        if (lockOwner != null && !lockOwner.equals(user.getUsername())) {
-            return new EditLockResponse(false, lockOwner, "Document is being edited by another user");
+        if (lockOwner != null) {
+            if (lockOwner.equals(user.getUsername())) {
+                redisTemplate.expire(key, LOCK_TTL);
+                return new EditLockResponse(true, user.getUsername(), "\u7f16\u8f91\u9501\u5df2\u7eed\u671f");
+            }
+            return new EditLockResponse(false, lockOwner, "\u6587\u6863\u6b63\u5728\u7531 " + lockOwner + " \u7f16\u8f91");
         }
         Boolean locked = redisTemplate.opsForValue().setIfAbsent(key, user.getUsername(), LOCK_TTL);
         if (Boolean.FALSE.equals(locked) && lockOwner == null) {
             lockOwner = redisTemplate.opsForValue().get(key);
-            return new EditLockResponse(false, lockOwner, "Document is being edited by another user");
+            if (user.getUsername().equals(lockOwner)) {
+                redisTemplate.expire(key, LOCK_TTL);
+                return new EditLockResponse(true, user.getUsername(), "\u7f16\u8f91\u9501\u5df2\u7eed\u671f");
+            }
+            return new EditLockResponse(false, lockOwner, "\u6587\u6863\u6b63\u5728\u7531 " + (lockOwner == null ? "\u5176\u4ed6\u7528\u6237" : lockOwner) + " \u7f16\u8f91");
         }
-        return new EditLockResponse(true, user.getUsername(), "Edit lock acquired");
+        return new EditLockResponse(true, user.getUsername(), "\u5df2\u83b7\u5f97\u7f16\u8f91\u9501");
     }
 
     public void unlock(Long docId, CurrentUser user) {
@@ -412,7 +437,7 @@ public class DocumentService {
         WikiDocument doc = loadActive(docId);
         ensureEditable(doc, user);
         if (title != null) {
-            doc.setTitle(title);
+            doc.setTitle(uniqueTitle(doc.getKbId(), title, doc.getId()));
         }
         if (markdownContent != null) {
             doc.setMarkdownContent(markdownContent);
@@ -444,70 +469,120 @@ public class DocumentService {
     }
 
     private void ensureReadable(WikiDocument doc, CurrentUser user) {
+        knowledgeBaseService.ensureKbVisible(doc.getKbId(), user);
         if (!canRead(doc, user)) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "No permission to view this document");
+            throw new BusinessException(ErrorCode.FORBIDDEN, "你可以进入该知识库，但该文档对你不可见。请联系文档作者或知识库管理员调整文档可见性。");
         }
     }
 
     private boolean canRead(WikiDocument doc, CurrentUser user) {
-        // 管理员或文档创建者可读
-        if (user.isAdmin() || doc.getOwnerId().equals(user.getUserId())) {
+        if (doc.getOwnerId().equals(user.getUserId())) {
             return true;
         }
-        // 公开文档所有人可读
+        KnowledgeBase kb = knowledgeBaseRepository.findById(doc.getKbId()).orElse(null);
+        if (kb != null) {
+            if (kb.getOwnerId().equals(user.getUserId())) {
+                return true;
+            }
+            if (knowledgeBaseMemberRepository.findByKbIdAndUserIdAndDeletedAtIsNull(kb.getId(), user.getUserId()).isPresent()) {
+                return doc.getVisibility() != DocVisibility.PRIVATE;
+            }
+        }
         if (doc.getVisibility() == DocVisibility.PUBLIC) {
             return true;
         }
-        // 私有文档：检查知识库权限
-        KnowledgeBase kb = knowledgeBaseRepository.findById(doc.getKbId()).orElse(null);
-        if (kb == null) {
+        if (doc.getVisibility() == DocVisibility.PRIVATE) {
             return false;
         }
-        // 公司公开知识库中的文档，所有人可读
-        if (kb.getType() == KnowledgeBaseType.COMPANY) {
-            return true;
-        }
-        // 部门知识库中的文档，同部门成员可读
-        if (kb.getType() == KnowledgeBaseType.DEPARTMENT) {
-            UserAccount currentUser = userRepository.findById(user.getUserId()).orElse(null);
-            UserAccount kbOwner = userRepository.findById(kb.getOwnerId()).orElse(null);
-            if (currentUser != null && kbOwner != null && currentUser.getDepartmentId() != null) {
-                return currentUser.getDepartmentId().equals(kbOwner.getDepartmentId());
-            }
-        }
-        // 私有知识库中的文档，仅创建者可读
-        return kb.getOwnerId().equals(user.getUserId());
+
+        return kb != null
+                && doc.getVisibility() == DocVisibility.TEAM
+                && isSameTeam(user.getUserId(), kb);
     }
 
     private void ensureEditable(WikiDocument doc, CurrentUser user) {
-        // 管理员或文档创建者可编辑
-        if (user.isAdmin() || doc.getOwnerId().equals(user.getUserId())) {
-            return;
+        if (doc.getVisibility() == DocVisibility.PRIVATE) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "私有文档只能由作者维护。");
         }
-        // 检查知识库权限
+
         KnowledgeBase kb = knowledgeBaseRepository.findById(doc.getKbId())
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "知识库不存在"));
-        // 公司公开知识库中的文档，所有人可编辑
-        if (kb.getType() == KnowledgeBaseType.COMPANY) {
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Knowledge base not found"));
+        if (doc.getVisibility() == DocVisibility.PUBLIC && canEditInKb(kb, user)) {
             return;
         }
-        // 部门知识库中的文档，同部门成员可编辑
-        if (kb.getType() == KnowledgeBaseType.DEPARTMENT) {
-            UserAccount currentUser = userRepository.findById(user.getUserId()).orElse(null);
-            UserAccount kbOwner = userRepository.findById(kb.getOwnerId()).orElse(null);
-            if (currentUser != null && kbOwner != null && currentUser.getDepartmentId() != null) {
-                if (currentUser.getDepartmentId().equals(kbOwner.getDepartmentId())) {
-                    return;
-                }
+        if (doc.getVisibility() == DocVisibility.TEAM
+                && isSameTeam(user.getUserId(), kb)
+                && canEditInKb(kb, user)) {
+            return;
+        }
+        throw new BusinessException(ErrorCode.FORBIDDEN, "你可以查看该知识库，但没有编辑权限；请联系知识库管理员加入协作名单。");
+    }
+
+    private boolean canEditInKb(KnowledgeBase kb, CurrentUser user) {
+        return knowledgeBaseMemberRepository.findByKbIdAndUserIdAndDeletedAtIsNull(kb.getId(), user.getUserId())
+                .map(member -> member.getRole() == MemberRole.EDITOR || member.getRole() == MemberRole.ADMIN)
+                .orElse(false);
+    }
+
+    private void ensureDeletable(WikiDocument doc, CurrentUser user) {
+        KnowledgeBase kb = knowledgeBaseRepository.findById(doc.getKbId())
+                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "Knowledge base not found"));
+        boolean kbManager = knowledgeBaseMemberRepository.findByKbIdAndUserIdAndDeletedAtIsNull(kb.getId(), user.getUserId())
+                .map(member -> member.getRole() == MemberRole.ADMIN)
+                .orElse(false);
+        if (!kbManager) {
+            throw new BusinessException(ErrorCode.FORBIDDEN, "Only knowledge base managers can delete documents");
+        }
+    }
+
+    private boolean canManageInKb(KnowledgeBase kb, CurrentUser user) {
+        return knowledgeBaseMemberRepository.findByKbIdAndUserIdAndDeletedAtIsNull(kb.getId(), user.getUserId())
+                .map(member -> member.getRole() == MemberRole.ADMIN)
+                .orElse(false);
+    }
+
+    private boolean isSameTeam(Long userId, KnowledgeBase kb) {
+        UserAccount currentUser = userRepository.findById(userId).orElse(null);
+        return currentUser != null
+                && userBelongsToTeam(userId, effectiveTeamId(kb));
+    }
+
+    private boolean userBelongsToTeam(Long userId, Long teamId) {
+        if (teamId == null) {
+            return false;
+        }
+        UserAccount currentUser = userRepository.findById(userId).orElse(null);
+        if (currentUser != null && isSameOrChildTeam(currentUser.getDepartmentId(), teamId)) {
+            return true;
+        }
+        return teamMembershipRepository.findByUserIdAndDeletedAtIsNull(userId)
+                .stream()
+                .map(UserTeamMembership::getTeamId)
+                .anyMatch(userTeamId -> isSameOrChildTeam(userTeamId, teamId));
+    }
+
+    private boolean isSameOrChildTeam(Long userTeamId, Long kbTeamId) {
+        if (userTeamId == null || kbTeamId == null) {
+            return false;
+        }
+        Long currentId = userTeamId;
+        for (int depth = 0; currentId != null && depth < 32; depth++) {
+            if (kbTeamId.equals(currentId)) {
+                return true;
             }
+            currentId = departmentRepository.findById(currentId)
+                    .map(Department::getParentId)
+                    .orElse(null);
         }
-        // 私有知识库中的文档，仅创建者可编辑
-        if (!kb.getOwnerId().equals(user.getUserId())) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "无编辑权限");
+        return false;
+    }
+
+    private Long effectiveTeamId(KnowledgeBase kb) {
+        if (kb.getTeamId() != null) {
+            return kb.getTeamId();
         }
-        if (!kb.getOwnerId().equals(user.getUserId())) {
-            throw new BusinessException(ErrorCode.FORBIDDEN, "无编辑权限");
-        }
+        UserAccount owner = userRepository.findById(kb.getOwnerId()).orElse(null);
+        return owner == null ? null : owner.getDepartmentId();
     }
 
     private void snapshot(WikiDocument doc, CurrentUser user, String message) {
@@ -524,61 +599,88 @@ public class DocumentService {
         versionRepository.save(version);
     }
 
+    private String uniqueTitle(Long kbId, String requestedTitle, Long currentDocId) {
+        String baseTitle = normalizeTitle(requestedTitle);
+        List<WikiDocument> existingDocs = documentRepository.findByKbIdAndTitleStartingWithAndDeletedAtIsNull(kbId, baseTitle);
+        Set<String> usedTitles = existingDocs.stream()
+                .filter(doc -> currentDocId == null || !doc.getId().equals(currentDocId))
+                .map(WikiDocument::getTitle)
+                .collect(Collectors.toCollection(HashSet::new));
+
+        if (!usedTitles.contains(baseTitle)) {
+            return baseTitle;
+        }
+
+        String suffixBase = stripAutoSuffix(baseTitle);
+        List<WikiDocument> suffixBaseDocs = suffixBase.equals(baseTitle)
+                ? existingDocs
+                : documentRepository.findByKbIdAndTitleStartingWithAndDeletedAtIsNull(kbId, suffixBase);
+        usedTitles.addAll(suffixBaseDocs.stream()
+                .filter(doc -> currentDocId == null || !doc.getId().equals(currentDocId))
+                .map(WikiDocument::getTitle)
+                .toList());
+
+        int suffix = 1;
+        String candidate;
+        do {
+            candidate = suffixBase + "（" + suffix + "）";
+            suffix++;
+        } while (usedTitles.contains(candidate));
+        return candidate;
+    }
+
+    private String normalizeTitle(String title) {
+        String normalized = title == null ? "" : title.trim();
+        if (normalized.isEmpty()) {
+            normalized = "未命名文档";
+        }
+        return normalized.length() > 240 ? normalized.substring(0, 240) : normalized;
+    }
+
+    private String stripAutoSuffix(String title) {
+        return title.replaceFirst("（\\d+）$", "");
+    }
+
     private List<DocumentResponse> listWithCache(Long kbId, String key, DocListSupplier supplier, CurrentUser user) {
         String cached = redisTemplate.opsForValue().get(key);
         if (cached != null) {
             try {
-                List<DocumentResponse> data = objectMapper.readValue(cached, new TypeReference<>() {
+                List<Long> ids = objectMapper.readValue(cached, new TypeReference<>() {
                 });
-                return data.stream().filter(doc -> canReadFromResponse(doc, kbId, user)).toList();
+                List<WikiDocument> docs = documentRepository.findByIdInAndDeletedAtIsNull(ids);
+                Map<Long, WikiDocument> byId = docs.stream().collect(Collectors.toMap(WikiDocument::getId, doc -> doc));
+                return ids.stream()
+                        .map(byId::get)
+                        .filter(Objects::nonNull)
+                        .filter(doc -> canRead(doc, user))
+                        .map(this::toResponse)
+                        .toList();
             } catch (Exception ignored) {
             }
         }
 
-        List<DocumentResponse> data = supplier.get().stream()
+        List<WikiDocument> docs = supplier.get();
+        try {
+            List<Long> ids = docs.stream().map(WikiDocument::getId).toList();
+            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(ids), LIST_CACHE_TTL);
+        } catch (Exception ignored) {
+        }
+        return docs.stream()
                 .filter(doc -> canRead(doc, user))
                 .map(this::toResponse)
                 .toList();
-        try {
-            redisTemplate.opsForValue().set(key, objectMapper.writeValueAsString(data), LIST_CACHE_TTL);
-        } catch (Exception ignored) {
-        }
-        return data;
-    }
-
-    private boolean canReadFromResponse(DocumentResponse doc, Long kbId, CurrentUser user) {
-        // 管理员或文档创建者可读
-        if (user.isAdmin() || doc.getOwnerId().equals(user.getUserId())) {
-            return true;
-        }
-        // 公开文档所有人可读
-        if (doc.getVisibility() == DocVisibility.PUBLIC) {
-            return true;
-        }
-        // 私有文档：检查知识库权限
-        KnowledgeBase kb = knowledgeBaseRepository.findById(kbId).orElse(null);
-        if (kb == null) {
-            return false;
-        }
-        // 公司公开知识库中的文档，所有人可读
-        if (kb.getType() == KnowledgeBaseType.COMPANY) {
-            return true;
-        }
-        // 部门知识库中的文档，同部门成员可读
-        if (kb.getType() == KnowledgeBaseType.DEPARTMENT) {
-            UserAccount currentUser = userRepository.findById(user.getUserId()).orElse(null);
-            UserAccount kbOwner = userRepository.findById(kb.getOwnerId()).orElse(null);
-            if (currentUser != null && kbOwner != null && currentUser.getDepartmentId() != null) {
-                return currentUser.getDepartmentId().equals(kbOwner.getDepartmentId());
-            }
-        }
-        // 私有知识库中的文档，仅创建者可读
-        return kb.getOwnerId().equals(user.getUserId());
     }
 
     private void invalidateListCache(Long kbId) {
         redisTemplate.delete(latestKey(kbId));
         redisTemplate.delete(hotKey(kbId));
+        redisTemplate.delete(searchKey(kbId));
+    }
+
+    private void markCacheChanged(Long kbId) {
+        String timestamp = String.valueOf(System.currentTimeMillis());
+        redisTemplate.opsForValue().set(cacheVersionKey(kbId), timestamp, Duration.ofDays(1));
+        redisTemplate.convertAndSend("wiki:doc-cache-events", kbId + ":" + timestamp);
     }
 
     private void cacheHtml(WikiDocument doc) {
@@ -599,6 +701,7 @@ public class DocumentService {
                 html = cachedHtml;
             }
         }
+        UserAccount owner = userRepository.findById(doc.getOwnerId()).orElse(null);
         return DocumentResponse.builder()
                 .id(doc.getId())
                 .kbId(doc.getKbId())
@@ -607,12 +710,51 @@ public class DocumentService {
                 .markdownContent(doc.getMarkdownContent())
                 .htmlContent(html)
                 .ownerId(doc.getOwnerId())
+                .ownerUsername(owner == null ? null : owner.getUsername())
+                .ownerName(owner == null ? null : firstNonBlank(owner.getNickname(), owner.getUsername()))
                 .visibility(doc.getVisibility())
                 .viewCount(doc.getViewCount())
                 .versionNo(doc.getVersionNo())
                 .published(doc.getPublished())
                 .updatedAt(doc.getUpdatedAt())
                 .build();
+    }
+
+    private DocumentResponse toSearchResponse(WikiDocument doc, String keyword) {
+        DocumentResponse response = toResponse(doc);
+        response.setSearchHighlight(buildSearchHighlight(doc, keyword));
+        return response;
+    }
+
+    private String firstNonBlank(String... values) {
+        for (String value : values) {
+            if (value != null && !value.isBlank()) {
+                return value;
+            }
+        }
+        return null;
+    }
+
+    private String buildSearchHighlight(WikiDocument doc, String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return null;
+        }
+        String term = keyword.trim().toLowerCase();
+        String source = (doc.getTitle() != null && doc.getTitle().toLowerCase().contains(term))
+                ? doc.getTitle()
+                : doc.getMarkdownContent();
+        if (source == null || source.isBlank()) {
+            return null;
+        }
+        String lower = source.toLowerCase();
+        int index = lower.indexOf(term);
+        if (index < 0) {
+            return source.length() <= 120 ? source : source.substring(0, 120) + "...";
+        }
+        int start = Math.max(0, index - 40);
+        int end = Math.min(source.length(), index + keyword.trim().length() + 80);
+        String snippet = source.substring(start, end);
+        return (start > 0 ? "..." : "") + snippet + (end < source.length() ? "..." : "");
     }
 
     private DraftResponse toDraftResponse(DocumentDraft draft) {
@@ -633,12 +775,20 @@ public class DocumentService {
         return "docs:hot:" + kbId;
     }
 
+    private String searchKey(Long kbId) {
+        return "docs:search:" + kbId;
+    }
+
     private String htmlKey(Long docId) {
         return "doc:html:" + docId;
     }
 
     private String lockKey(Long docId) {
         return "editing:" + docId;
+    }
+
+    private String cacheVersionKey(Long kbId) {
+        return "docs:cache-version:" + kbId;
     }
 
     public String generateShareToken() {
@@ -658,6 +808,7 @@ public class DocumentService {
         doc.setViewCount(doc.getViewCount() + 1);
         documentRepository.save(doc);
         redisTemplate.delete(hotKey(doc.getKbId()));
+        markCacheChanged(doc.getKbId());
         String cachedHtml = redisTemplate.opsForValue().get(htmlKey(doc.getId()));
         if (cachedHtml != null) {
             doc.setHtmlContent(cachedHtml);
@@ -673,19 +824,51 @@ public class DocumentService {
     }
 
     private List<WikiDocument> searchDocs(Long kbId, String keyword) {
-        List<Long> esDocIds = documentSearchService.searchDocIds(kbId, keyword);
-        if (esDocIds == null) {
+        List<Long> indexedDocIds = documentSearchService.searchDocIds(kbId, keyword);
+        if (indexedDocIds == null) {
             return documentRepository.search(kbId, keyword);
         }
-        if (esDocIds.isEmpty()) {
+        if (indexedDocIds.isEmpty()) {
             return List.of();
         }
-        List<WikiDocument> docs = documentRepository.findByIdInAndDeletedAtIsNull(esDocIds);
+        List<WikiDocument> docs = documentRepository.findByIdInAndDeletedAtIsNull(indexedDocIds);
         Map<Long, WikiDocument> docMap = docs.stream().collect(Collectors.toMap(WikiDocument::getId, doc -> doc));
-        return esDocIds.stream()
+        return indexedDocIds.stream()
                 .map(docMap::get)
                 .filter(Objects::nonNull)
                 .toList();
+    }
+
+    private List<WikiDocument> searchDocsWithCache(Long kbId, String keyword) {
+        if (keyword == null || keyword.isBlank()) {
+            return searchDocs(kbId, keyword);
+        }
+        String normalizedKeyword = keyword.trim().toLowerCase();
+        String key = searchKey(kbId);
+        String hashKey = normalizedKeyword.length() > 64
+                ? Integer.toHexString(normalizedKeyword.hashCode())
+                : normalizedKeyword;
+        String cached = redisTemplate.opsForHash().get(key, hashKey) instanceof String value ? value : null;
+        if (cached != null) {
+            try {
+                List<Long> ids = objectMapper.readValue(cached, new TypeReference<>() {
+                });
+                List<WikiDocument> docs = documentRepository.findByIdInAndDeletedAtIsNull(ids);
+                Map<Long, WikiDocument> docMap = docs.stream().collect(Collectors.toMap(WikiDocument::getId, doc -> doc));
+                return ids.stream()
+                        .map(docMap::get)
+                        .filter(Objects::nonNull)
+                        .toList();
+            } catch (Exception ignored) {
+            }
+        }
+        List<WikiDocument> docs = searchDocs(kbId, keyword);
+        try {
+            redisTemplate.opsForHash().put(key, hashKey, objectMapper.writeValueAsString(docs.stream().map(WikiDocument::getId).toList()));
+            redisTemplate.expire(key, SEARCH_CACHE_TTL);
+        } catch (Exception ignored) {
+        }
+        return docs;
     }
 
     private List<DiffLineResponse> diffByLine(String leftText, String rightText) {

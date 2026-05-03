@@ -72,6 +72,11 @@ public class KnowledgeBaseController {
         return ApiResponse.ok(knowledgeBaseService.listMembers(kbId, SecurityUtils.currentUser()));
     }
 
+    @GetMapping("/{kbId}/children")
+    public ApiResponse<List<KnowledgeBaseResponse>> children(@PathVariable Long kbId) {
+        return ApiResponse.ok(knowledgeBaseService.listChildren(kbId, SecurityUtils.currentUser()));
+    }
+
     @PostMapping("/{kbId}/members")
     public ApiResponse<MemberResponse> inviteOrUpdateMember(@PathVariable Long kbId,
                                                             @Valid @RequestBody InviteMemberRequest request,

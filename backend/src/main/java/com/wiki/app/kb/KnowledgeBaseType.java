@@ -1,7 +1,21 @@
 package com.wiki.app.kb;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+
 public enum KnowledgeBaseType {
-    COMPANY,    // 公司公开：全公司所有员工可见、可编辑
-    DEPARTMENT, // 部门：部门内成员可见、可编辑，部门部长有管理权
-    PRIVATE     // 私有：仅创建者可见、可编辑
+    COMPANY,
+    DEPARTMENT,
+    PRIVATE;
+
+    @JsonCreator
+    public static KnowledgeBaseType from(String raw) {
+        if (raw == null || raw.isBlank()) {
+            return null;
+        }
+        String value = raw.trim().toUpperCase();
+        if ("PUBLIC".equals(value)) {
+            return COMPANY;
+        }
+        return KnowledgeBaseType.valueOf(value);
+    }
 }
