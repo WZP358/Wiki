@@ -41,6 +41,7 @@ D:\code\Wiki\backend\src\main\java\com\wiki\app\common\ErrorCode.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\common\GlobalExceptionHandler.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\common\SnowflakeIdGenerator.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\config\AppProperties.java
+D:\code\Wiki\backend\src\main\java\com\wiki\app\config\DemoDataInitializer.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\config\JacksonConfig.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\config\SchedulingConfig.java
 D:\code\Wiki\backend\src\main\java\com\wiki\app\config\SecurityConfig.java

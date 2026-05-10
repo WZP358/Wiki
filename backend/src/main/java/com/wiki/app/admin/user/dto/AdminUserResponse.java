@@ -1,5 +1,6 @@
 package com.wiki.app.admin.user.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Data;
 
@@ -22,7 +23,9 @@ public class AdminUserResponse {
     private List<String> teamNames;
     private boolean active;
     private boolean pendingAssignment;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 }
 

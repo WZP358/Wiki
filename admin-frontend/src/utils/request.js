@@ -1,7 +1,7 @@
 import axios from 'axios'
 import { Message, MessageBox, Loading } from 'element-ui'
 import store from '@/store'
-import { getToken } from '@/utils/auth'
+import { getToken, removeToken } from '@/utils/auth'
 import { tansParams, blobValidate } from '@/utils/ruoyi'
 import { saveAs } from 'file-saver'
 
@@ -63,6 +63,10 @@ service.interceptors.response.use(res => {
 })
 
 function handleUnauthorized() {
+  removeToken()
+  if (window.location.pathname === '/login') {
+    return
+  }
   if (isRelogin.show) {
     return
   }

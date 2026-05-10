@@ -111,6 +111,11 @@ export default {
     this.getCookie()
   },
   methods: {
+    resolveLoginError(error) {
+      return (error && error.response && error.response.data && (error.response.data.message || error.response.data.msg)) ||
+        (error && error.message) ||
+        '账号或密码错误，请重新输入'
+    },
     getCode() {
       getCodeImg().then(res => {
         this.captchaEnabled = res.captchaEnabled === undefined ? true : res.captchaEnabled
@@ -145,8 +150,9 @@ export default {
           }
           this.$store.dispatch("Login", this.loginForm).then(() => {
             this.$router.push({ path: this.redirect || "/" }).catch(()=>{})
-          }).catch(() => {
+          }).catch(error => {
             this.loading = false
+            this.$modal.alertError(this.resolveLoginError(error))
             if (this.captchaEnabled) {
               this.getCode()
             }

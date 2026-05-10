@@ -79,11 +79,12 @@ public class AdminUserController {
             }
         }
 
+        Boolean activeFilter = active == null ? Boolean.TRUE : active;
         Page<UserAccount> result = userRepository.adminSearch(
                 keyword == null ? null : keyword.trim(),
                 roleEnum,
                 departmentId,
-                active,
+                activeFilter,
                 PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "updatedAt"))
         );
         return ApiResponse.ok(result.map(this::toResponse));
@@ -185,9 +186,11 @@ public class AdminUserController {
                 .avatarUrl(u.getAvatarUrl())
                 .role(u.getRole() == null ? null : u.getRole().name())
                 .departmentId(u.getDepartmentId())
-                .departmentName(departmentName(u.getDepartmentId()))
+                .departmentName(u.getRole() == UserRole.ADMIN && u.getDepartmentId() == null
+                        ? "系统管理"
+                        : departmentName(u.getDepartmentId()))
                 .teamIds(teamIds(u.getId()))
-                .teamNames(teamNames(u.getId()))
+                .teamNames(u.getRole() == UserRole.ADMIN ? List.of("系统管理") : teamNames(u.getId()))
                 .active(u.getDeletedAt() == null)
                 .pendingAssignment(u.getRole() == UserRole.USER
                         && u.getDepartmentId() == null

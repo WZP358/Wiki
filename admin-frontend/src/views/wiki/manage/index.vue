@@ -29,11 +29,6 @@
           <el-option v-for="item in kbOptions" :key="item.kbId" :label="item.kbName" :value="item.kbId" />
         </el-select>
       </el-form-item>
-      <el-form-item label="分组" prop="groupId">
-        <el-select v-model="queryParams.groupId" placeholder="请选择分组" clearable filterable style="width: 220px">
-          <el-option v-for="item in queryGroupOptions" :key="item.groupId" :label="item.groupName" :value="item.groupId" />
-        </el-select>
-      </el-form-item>
       <el-form-item label="状态" prop="status">
         <el-select v-model="queryParams.status" placeholder="请选择状态" clearable style="width: 160px">
           <el-option label="草稿" value="draft" />
@@ -71,8 +66,6 @@
         </template>
       </el-table-column>
       <el-table-column label="知识库" align="center" prop="kbName" min-width="140" :show-overflow-tooltip="true" />
-      <el-table-column label="分组" align="center" prop="groupName" min-width="120" :show-overflow-tooltip="true" />
-      <el-table-column label="标签" align="center" prop="tagNames" min-width="180" :show-overflow-tooltip="true" />
       <el-table-column label="父文档" align="center" width="100">
         <template slot-scope="scope">
           <span>{{ scope.row.parentId && scope.row.parentId !== 0 ? scope.row.parentId : "无" }}</span>
@@ -143,19 +136,6 @@
         </el-row>
         <el-row :gutter="16">
           <el-col :span="12">
-            <el-form-item label="分组" prop="groupId">
-              <el-select
-                v-model="form.groupId"
-                placeholder="请选择分组"
-                filterable
-                style="width: 100%"
-                :disabled="editLocked"
-              >
-                <el-option v-for="item in formGroupOptions" :key="item.groupId" :label="item.groupName" :value="item.groupId" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :span="12">
             <el-form-item label="父文档" prop="parentId">
               <el-select
                 v-model="form.parentId"
@@ -190,9 +170,6 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <el-form-item label="标签" prop="tagIds">
-          <document-tag-select v-model="form.tagIds" :kb-id="form.kbId" :disabled="editLocked" />
-        </el-form-item>
         <el-form-item label="摘要" prop="summary">
           <el-input v-model="form.summary" type="textarea" :rows="3" placeholder="请输入文档摘要" :disabled="editLocked" />
         </el-form-item>
@@ -217,7 +194,6 @@
         <el-table-column label="文档ID" align="center" prop="docId" width="110" />
         <el-table-column label="文档标题" align="center" prop="title" min-width="220" :show-overflow-tooltip="true" />
         <el-table-column label="知识库" align="center" prop="kbName" min-width="160" :show-overflow-tooltip="true" />
-        <el-table-column label="分组" align="center" prop="groupName" min-width="140" :show-overflow-tooltip="true" />
         <el-table-column label="最近更新" align="center" prop="updateTime" width="160">
           <template slot-scope="scope">
             <span>{{ parseTime(scope.row.updateTime) }}</span>
@@ -238,7 +214,6 @@
 <script>
 import Editor from "@/components/Editor"
 import RightToolbar from "@/components/RightToolbar"
-import DocumentTagSelect from "./components/DocumentTagSelect"
 import WikiViewDrawer from "./view"
 import {
   addAdminWikiDocument,
@@ -253,11 +228,10 @@ import {
   updateAdminWikiDocument
 } from "@/api/wiki/document"
 import { listKb } from "@/api/wiki/kb"
-import { listGroupOptions } from "@/api/wiki/group"
 
 export default {
   name: "WikiManage",
-  components: { Editor, RightToolbar, DocumentTagSelect, WikiViewDrawer },
+  components: { Editor, RightToolbar, WikiViewDrawer },
   data() {
     return {
       loading: true,
@@ -268,8 +242,6 @@ export default {
       total: 0,
       docList: [],
       kbOptions: [],
-      queryGroupOptions: [],
-      formGroupOptions: [],
       parentSource: [],
       title: "",
       open: false,
@@ -287,14 +259,12 @@ export default {
         pageSize: 10,
         title: undefined,
         kbId: undefined,
-        groupId: undefined,
         status: undefined
       },
       form: {},
       rules: {
         title: [{ required: true, message: "文档标题不能为空", trigger: "blur" }],
         kbId: [{ required: true, message: "知识库不能为空", trigger: "change" }],
-        groupId: [{ required: true, message: "分组不能为空", trigger: "change" }],
         visibility: [{ required: true, message: "请选择可见范围", trigger: "change" }],
         status: [{ required: true, message: "请选择状态", trigger: "change" }],
         markdownContent: [{ required: true, message: "Markdown内容不能为空", trigger: "blur" }]
@@ -310,9 +280,7 @@ export default {
         if (!this.form.kbId || item.kbId !== this.form.kbId) {
           return false
         }
-        const currentGroupId = this.form.groupId || null
-        const parentGroupId = item.groupId || null
-        return currentGroupId === parentGroupId
+        return true
       })
     },
     editLocked() {
@@ -323,13 +291,6 @@ export default {
         return `当前编辑锁已由你持有，30分钟内其他协作者无法同时修改。`
       }
       return `当前文档正在由 ${this.lockInfo.owner || "其他协作者"} 编辑，请稍后再试。`
-    }
-  },
-  watch: {
-    "form.groupId"(value, oldValue) {
-      if (value !== oldValue) {
-        this.form.parentId = 0
-      }
     }
   },
   created() {
@@ -360,31 +321,11 @@ export default {
         this.parentSource = response.data || response.rows || []
       })
     },
-    loadQueryGroups(kbId) {
-      if (!kbId) {
-        this.queryGroupOptions = []
-        return
-      }
-      listGroupOptions(kbId).then(response => {
-        this.queryGroupOptions = response.data || []
-      })
-    },
-    loadFormGroups(kbId) {
-      if (!kbId) {
-        this.formGroupOptions = []
-        return
-      }
-      listGroupOptions(kbId).then(response => {
-        this.formGroupOptions = response.data || []
-      })
-    },
     reset() {
       this.form = {
         docId: undefined,
         kbId: undefined,
-        groupId: undefined,
         parentId: 0,
-        tagIds: [],
         title: undefined,
         summary: undefined,
         visibility: "public",
@@ -392,7 +333,6 @@ export default {
         markdownContent: undefined,
         commitMessage: undefined
       }
-      this.formGroupOptions = []
       this.lockInfo = {
         locked: false,
         owner: "",
@@ -416,7 +356,6 @@ export default {
     },
     resetQuery() {
       this.resetForm("queryForm")
-      this.queryGroupOptions = []
       this.handleQuery()
     },
     handleSelectionChange(selection) {
@@ -424,15 +363,11 @@ export default {
       this.single = selection.length !== 1
       this.multiple = !selection.length
     },
-    handleKbChange(value) {
-      this.queryParams.groupId = undefined
-      this.loadQueryGroups(value)
+    handleKbChange() {
+      this.handleQuery()
     },
-    handleFormKbChange(value) {
-      this.form.groupId = undefined
+    handleFormKbChange() {
       this.form.parentId = 0
-      this.form.tagIds = []
-      this.loadFormGroups(value)
     },
     handleAdd() {
       this.releaseCurrentLock()
@@ -450,8 +385,6 @@ export default {
       }).then(response => {
         this.form = response.data || {}
         this.form.parentId = this.form.parentId || 0
-        this.form.tagIds = this.form.tagIds || []
-        this.loadFormGroups(this.form.kbId)
         this.currentLockDocId = docId
         this.open = true
         this.title = this.lockInfo.locked ? "修改文档" : "查看协作文档"

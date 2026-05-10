@@ -1,5 +1,6 @@
 package com.wiki.app.admin.dept.dto;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
 import lombok.Builder;
 import lombok.Data;
 
@@ -14,7 +15,9 @@ public class AdminDepartmentResponse {
     private Long managerId;
     private String description;
     private boolean active;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime createdAt;
+    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
     private LocalDateTime updatedAt;
 }
 

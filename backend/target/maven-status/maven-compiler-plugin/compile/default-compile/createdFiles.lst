@@ -13,6 +13,7 @@ com\wiki\app\admin\dto\OperationLogResponse$OperationLogResponseBuilder.class
 com\wiki\app\mail\MailService.class
 com\wiki\app\admin\stats\dto\AdminOverviewStatsResponse$DailyCount.class
 com\wiki\app\kb\KnowledgeBaseService.class
+com\wiki\app\config\DemoDataInitializer$DocSeed.class
 com\wiki\app\kb\dto\InviteMemberRequest.class
 com\wiki\app\kb\dto\KnowledgeBaseResponse.class
 com\wiki\app\admin\dept\dto\AdminDepartmentRequest.class
@@ -101,6 +102,7 @@ com\wiki\app\doc\dto\DocumentTreeNode.class
 com\wiki\app\doc\dto\SaveDraftRequest.class
 com\wiki\app\admin\user\dto\AdminUserResponse.class
 com\wiki\app\admin\stats\dto\AdminOverviewStatsResponse$DailyCount$DailyCountBuilder.class
+com\wiki\app\config\DemoDataInitializer.class
 com\wiki\app\doc\dto\VersionDiffResponse$VersionDiffResponseBuilder.class
 com\wiki\app\common\SnowflakeIdGenerator.class
 com\wiki\app\doc\dto\DiffLineResponse.class

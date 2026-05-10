@@ -276,7 +276,7 @@
           ></textarea>
         </div>
         <div v-show="editorMode !== 'edit'" class="preview-pane">
-          <article class="markdown-preview" v-html="previewHtml"></article>
+          <article class="markdown-preview" v-html="previewHtml" @click="handlePreviewClick"></article>
         </div>
       </div>
 
@@ -330,6 +330,11 @@ import { marked } from 'marked'
 import { docApi } from '../api/modules'
 import { showToast } from '../utils/errorBus'
 
+marked.setOptions({
+  gfm: true,
+  breaks: true
+})
+
 const route = useRoute()
 const router = useRouter()
 
@@ -376,7 +381,17 @@ const saveToast = reactive({
 })
 let saveToastTimer = null
 
-const previewHtml = computed(() => marked.parse(form.markdownContent || ''))
+const previewHtml = computed(() => makePreviewHtml(form.markdownContent || ''))
+
+function makePreviewHtml(markdown) {
+  let taskIndex = 0
+  const renderer = new marked.Renderer()
+  renderer.checkbox = ({ checked }) => {
+    const index = taskIndex++
+    return `<button type="button" class="task-checkbox${checked ? ' is-checked' : ''}" data-task-index="${index}" aria-pressed="${checked}" aria-label="切换任务状态">${checked ? '✓' : ''}</button>`
+  }
+  return marked.parse(markdown, { renderer })
+}
 
 function readEditorMode() {
   const saved = localStorage.getItem(EDITOR_MODE_KEY)
@@ -686,6 +701,47 @@ function reportCursor() {
     cursorStart: el.selectionStart,
     cursorEnd: el.selectionEnd
   })
+}
+
+function handlePreviewClick(event) {
+  const target = event.target instanceof Element ? event.target.closest('.task-checkbox') : null
+  if (!(target instanceof HTMLElement)) {
+    return
+  }
+  event.preventDefault()
+  const taskIndex = Number(target.dataset.taskIndex)
+  if (!Number.isInteger(taskIndex)) {
+    return
+  }
+  const checked = target.getAttribute('aria-pressed') !== 'true'
+  if (!editLock.locked) {
+    showSaveToast(editLock.message || '未获得编辑锁，不能修改任务状态', 'error', 3500)
+    return
+  }
+  if (toggleMarkdownTask(taskIndex, checked)) {
+    showSaveToast('任务状态已同步到左侧 Markdown，保存后生效', 'success', 1800)
+  }
+}
+
+function toggleMarkdownTask(taskIndex, checked) {
+  let seen = -1
+  let changed = false
+  const lines = String(form.markdownContent || '').split('\n').map(line => {
+    const match = line.match(/^(\s*[-*+]\s+\[)( |x|X)(\]\s+)/)
+    if (!match) {
+      return line
+    }
+    seen += 1
+    if (seen !== taskIndex) {
+      return line
+    }
+    changed = true
+    return line.replace(/^(\s*[-*+]\s+\[)( |x|X)(\]\s+)/, `$1${checked ? 'x' : ' '}$3`)
+  })
+  if (changed) {
+    form.markdownContent = lines.join('\n')
+  }
+  return changed
 }
 
 function nudgeLockOwner() {
@@ -1706,6 +1762,34 @@ const TreeItem = defineComponent({
 
 .markdown-preview p {
   margin: 12px 0;
+}
+
+.markdown-preview :deep(.task-checkbox) {
+  width: 16px;
+  height: 16px;
+  min-width: 16px;
+  margin: 0 8px 0 0;
+  padding: 0;
+  border: 1px solid var(--line);
+  border-radius: 3px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  vertical-align: -2px;
+  background: var(--panel);
+  color: #fff;
+  font-size: 12px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.markdown-preview :deep(.task-checkbox.is-checked) {
+  border-color: var(--brand);
+  background: var(--brand);
+}
+
+.markdown-preview :deep(li) {
+  margin: 4px 0;
 }
 
 .markdown-preview :deep(img),

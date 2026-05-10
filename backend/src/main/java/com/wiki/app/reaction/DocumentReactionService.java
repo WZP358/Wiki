@@ -3,6 +3,7 @@ package com.wiki.app.reaction;
 import com.wiki.app.common.BusinessException;
 import com.wiki.app.common.ErrorCode;
 import com.wiki.app.common.SnowflakeIdGenerator;
+import com.wiki.app.doc.DocumentService;
 import com.wiki.app.doc.WikiDocument;
 import com.wiki.app.doc.WikiDocumentRepository;
 import com.wiki.app.log.OperationLogService;
@@ -19,21 +20,25 @@ import java.util.Map;
 public class DocumentReactionService {
     private final DocumentReactionRepository reactionRepository;
     private final WikiDocumentRepository documentRepository;
+    private final DocumentService documentService;
     private final SnowflakeIdGenerator idGenerator;
     private final OperationLogService operationLogService;
 
     public DocumentReactionService(DocumentReactionRepository reactionRepository,
                                   WikiDocumentRepository documentRepository,
+                                  DocumentService documentService,
                                   SnowflakeIdGenerator idGenerator,
                                   OperationLogService operationLogService) {
         this.reactionRepository = reactionRepository;
         this.documentRepository = documentRepository;
+        this.documentService = documentService;
         this.idGenerator = idGenerator;
         this.operationLogService = operationLogService;
     }
 
     @Transactional
     public void toggle(Long documentId, ReactionType reactionType, CurrentUser user, String ip) {
+        documentService.requireReadable(documentId, user);
         WikiDocument document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "文档不存在"));
 
@@ -71,6 +76,7 @@ public class DocumentReactionService {
     }
 
     public ReactionStatsResponse getStats(Long documentId, CurrentUser user) {
+        documentService.requireReadable(documentId, user);
         List<Object[]> counts = reactionRepository.countByDocumentIdGroupByType(documentId);
 
         Map<ReactionType, Long> countMap = new HashMap<>();

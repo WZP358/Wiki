@@ -35,6 +35,7 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.*;
 
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,6 +43,8 @@ import java.util.Map;
 @RestController
 @PreAuthorize("hasRole('ADMIN')")
 public class WikiAdminCompatController {
+    private static final DateTimeFormatter DATETIME_FORMATTER = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     private final KnowledgeBaseRepository kbRepository;
     private final KnowledgeBaseMemberRepository memberRepository;
     private final WikiDocumentRepository docRepository;
@@ -556,7 +559,11 @@ public class WikiAdminCompatController {
     private Map<String, Object> row(Object... values) {
         Map<String, Object> map = new LinkedHashMap<>();
         for (int i = 0; i < values.length - 1; i += 2) {
-            map.put(String.valueOf(values[i]), values[i + 1]);
+            Object value = values[i + 1];
+            if (value instanceof LocalDateTime dateTime) {
+                value = dateTime.format(DATETIME_FORMATTER);
+            }
+            map.put(String.valueOf(values[i]), value);
         }
         return map;
     }

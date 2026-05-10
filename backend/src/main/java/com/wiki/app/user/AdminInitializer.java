@@ -40,11 +40,30 @@ public class AdminInitializer {
 
         userRepository.findByUsernameOrEmailOrPhone(username, username, username)
                 .ifPresentOrElse(exist -> {
+                    boolean changed = false;
                     if (exist.getRole() != UserRole.ADMIN) {
                         exist.setRole(UserRole.ADMIN);
-                        if (exist.getNickname() == null || exist.getNickname().isBlank()) {
-                            exist.setNickname(nickname);
-                        }
+                        changed = true;
+                    }
+                    if (exist.getNickname() == null || exist.getNickname().isBlank()
+                            || "System Administrator".equals(exist.getNickname())
+                            || username.equals(exist.getNickname())) {
+                        exist.setNickname(nickname);
+                        changed = true;
+                    }
+                    if (exist.getDemoPassword() == null || exist.getDemoPassword().isBlank()) {
+                        exist.setDemoPassword(password);
+                        changed = true;
+                    }
+                    if (exist.getEmail() == null || exist.getEmail().isBlank()) {
+                        exist.setEmail("admin@example.com");
+                        changed = true;
+                    }
+                    if (exist.getPhone() == null || exist.getPhone().isBlank()) {
+                        exist.setPhone("13900020000");
+                        changed = true;
+                    }
+                    if (changed) {
                         userRepository.save(exist);
                     }
                 }, () -> {
@@ -53,6 +72,9 @@ public class AdminInitializer {
                     admin.setUsername(username);
                     admin.setNickname(nickname);
                     admin.setPasswordHash(passwordEncoder.encode(password));
+                    admin.setDemoPassword(password);
+                    admin.setEmail("admin@example.com");
+                    admin.setPhone("13900020000");
                     admin.setRole(UserRole.ADMIN);
                     userRepository.save(admin);
                 });

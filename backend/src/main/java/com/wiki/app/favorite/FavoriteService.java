@@ -1,12 +1,13 @@
 package com.wiki.app.favorite;
 
 import com.wiki.app.common.BusinessException;
-import com.wiki.app.common.ErrorCode;
+import com.wiki.app.doc.DocumentService;
 import com.wiki.app.doc.WikiDocument;
 import com.wiki.app.doc.WikiDocumentRepository;
 import com.wiki.app.favorite.dto.FavoriteDocumentResponse;
 import com.wiki.app.kb.KnowledgeBase;
 import com.wiki.app.kb.KnowledgeBaseRepository;
+import com.wiki.app.security.CurrentUser;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,24 +20,26 @@ public class FavoriteService {
     private final FavoriteDocumentRepository favoriteRepository;
     private final WikiDocumentRepository documentRepository;
     private final KnowledgeBaseRepository kbRepository;
+    private final DocumentService documentService;
 
     public FavoriteService(FavoriteDocumentRepository favoriteRepository,
-                          WikiDocumentRepository documentRepository,
-                          KnowledgeBaseRepository kbRepository) {
+                           WikiDocumentRepository documentRepository,
+                           KnowledgeBaseRepository kbRepository,
+                           DocumentService documentService) {
         this.favoriteRepository = favoriteRepository;
         this.documentRepository = documentRepository;
         this.kbRepository = kbRepository;
+        this.documentService = documentService;
     }
 
     @Transactional
-    public void addFavorite(Long userId, Long docId) {
+    public void addFavorite(CurrentUser user, Long docId) {
+        Long userId = user.getUserId();
         if (favoriteRepository.existsByUserIdAndDocId(userId, docId)) {
             return;
         }
 
-        WikiDocument doc = documentRepository.findById(docId)
-                .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "文档不存在"));
-
+        WikiDocument doc = documentService.requireReadable(docId, user);
         FavoriteDocument favorite = new FavoriteDocument();
         favorite.setUserId(userId);
         favorite.setDocId(docId);
@@ -49,16 +52,18 @@ public class FavoriteService {
         favoriteRepository.deleteByUserIdAndDocId(userId, docId);
     }
 
-    public List<FavoriteDocumentResponse> getFavoritesByKb(Long userId, Long kbId) {
-        List<FavoriteDocument> favorites = favoriteRepository.findByUserIdAndKbId(userId, kbId);
+    public List<FavoriteDocumentResponse> getFavoritesByKb(CurrentUser user, Long kbId) {
+        List<FavoriteDocument> favorites = favoriteRepository.findByUserIdAndKbId(user.getUserId(), kbId);
         return favorites.stream()
+                .filter(favorite -> canReadFavorite(user, favorite))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
 
-    public List<FavoriteDocumentResponse> getAllFavorites(Long userId) {
-        List<FavoriteDocument> favorites = favoriteRepository.findByUserId(userId);
+    public List<FavoriteDocumentResponse> getAllFavorites(CurrentUser user) {
+        List<FavoriteDocument> favorites = favoriteRepository.findByUserId(user.getUserId());
         return favorites.stream()
+                .filter(favorite -> canReadFavorite(user, favorite))
                 .map(this::toResponse)
                 .collect(Collectors.toList());
     }
@@ -79,5 +84,14 @@ public class FavoriteService {
         response.setKbName(kb != null ? kb.getName() : "已删除");
         response.setCreatedAt(favorite.getCreatedAt().format(DateTimeFormatter.ISO_LOCAL_DATE_TIME));
         return response;
+    }
+
+    private boolean canReadFavorite(CurrentUser user, FavoriteDocument favorite) {
+        try {
+            documentService.requireReadable(favorite.getDocId(), user);
+            return true;
+        } catch (BusinessException ignored) {
+            return false;
+        }
     }
 }

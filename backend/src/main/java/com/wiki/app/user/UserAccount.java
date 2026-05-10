@@ -31,6 +31,9 @@ public class UserAccount extends BaseEntity {
     private String passwordHash;
 
     @Column(length = 64)
+    private String demoPassword;
+
+    @Column(length = 64)
     private String nickname;
 
     @Column(length = 512)

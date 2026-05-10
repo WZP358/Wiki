@@ -20,7 +20,7 @@ public class FavoriteController {
     @PostMapping("/docs/{docId}")
     public ApiResponse<Void> addFavorite(@PathVariable Long docId) {
         CurrentUser user = SecurityUtils.currentUser();
-        favoriteService.addFavorite(user.getUserId(), docId);
+        favoriteService.addFavorite(user, docId);
         return ApiResponse.ok(null);
     }
 
@@ -35,9 +35,9 @@ public class FavoriteController {
     public ApiResponse<List<FavoriteDocumentResponse>> myFavorites(@RequestParam(required = false) Long kbId) {
         CurrentUser user = SecurityUtils.currentUser();
         if (kbId != null) {
-            return ApiResponse.ok(favoriteService.getFavoritesByKb(user.getUserId(), kbId));
+            return ApiResponse.ok(favoriteService.getFavoritesByKb(user, kbId));
         }
-        return ApiResponse.ok(favoriteService.getAllFavorites(user.getUserId()));
+        return ApiResponse.ok(favoriteService.getAllFavorites(user));
     }
 
     @GetMapping("/check/{docId}")

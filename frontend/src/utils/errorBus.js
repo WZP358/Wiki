@@ -1,4 +1,5 @@
-﻿import { reactive } from 'vue'
+import { reactive } from 'vue'
+import { ElMessage, ElMessageBox } from 'element-plus'
 
 export const errorState = reactive({
   visible: false,
@@ -6,15 +7,12 @@ export const errorState = reactive({
   message: '',
   code: '',
   suggestion: '',
-  // request context (best-effort)
   request: {
     method: '',
     url: '',
     status: null
   },
-  // developer / support details (string)
   details: '',
-  // original response body string (legacy)
   raw: '',
   time: 0
 })
@@ -42,6 +40,12 @@ export const confirmState = reactive({
 
 let toastTimer = null
 
+function boxType(tone) {
+  if (tone === 'danger') return 'error'
+  if (tone === 'warning') return 'warning'
+  return 'info'
+}
+
 export function showError(payload) {
   errorState.visible = true
   errorState.title = payload.title || '请求失败'
@@ -52,20 +56,46 @@ export function showError(payload) {
   errorState.details = payload.details || ''
   errorState.raw = payload.raw || payload.details || ''
   errorState.time = payload.time || Date.now()
+
+  const messageParts = [
+    errorState.message,
+    errorState.suggestion ? `建议：${errorState.suggestion}` : '',
+    errorState.request?.url
+      ? `请求：${String(errorState.request.method || 'GET').toUpperCase()} ${errorState.request.url}${errorState.request.status ? `（HTTP ${errorState.request.status}）` : ''}`
+      : ''
+  ].filter(Boolean)
+
+  return ElMessageBox.alert(messageParts.join('\n\n'), errorState.title, {
+    type: 'error',
+    confirmButtonText: '知道了',
+    closeOnClickModal: false
+  }).catch(() => {})
 }
 
 export function showToast(payload) {
+  const message = typeof payload === 'string' ? payload : (payload.message || '操作提示')
+  const type = typeof payload === 'string' ? 'info' : (payload.type || 'info')
+  const title = typeof payload === 'string' ? '' : (payload.title || '')
+  const duration = typeof payload === 'string' ? 2600 : (payload.duration || 2600)
+
   toastState.visible = true
-  toastState.message = typeof payload === 'string' ? payload : (payload.message || '操作提示')
-  toastState.type = typeof payload === 'string' ? 'info' : (payload.type || 'info')
-  toastState.title = typeof payload === 'string' ? '' : (payload.title || '')
+  toastState.message = message
+  toastState.type = type
+  toastState.title = title
   toastState.time = Date.now()
   if (toastTimer) {
     clearTimeout(toastTimer)
   }
   toastTimer = setTimeout(() => {
     toastState.visible = false
-  }, typeof payload === 'string' ? 2600 : (payload.duration || 2600))
+  }, duration)
+
+  return ElMessage({
+    message: title ? `${title}：${message}` : message,
+    type,
+    duration,
+    showClose: true
+  })
 }
 
 export function closeError() {
@@ -79,20 +109,42 @@ export function confirmDialog(payload) {
   confirmState.tone = payload.tone || 'default'
   confirmState.confirmText = payload.confirmText || '确定'
   confirmState.cancelText = payload.cancelText || '取消'
-  confirmState.input = Boolean(payload.input)
-  confirmState.inputValue = payload.inputValue || ''
-  confirmState.inputPlaceholder = payload.inputPlaceholder || ''
+  confirmState.input = false
+  confirmState.inputValue = ''
+  confirmState.inputPlaceholder = ''
 
-  return new Promise(resolve => {
-    confirmState.resolve = resolve
+  return ElMessageBox.confirm(confirmState.message, confirmState.title, {
+    type: boxType(confirmState.tone),
+    confirmButtonText: confirmState.confirmText,
+    cancelButtonText: confirmState.cancelText,
+    closeOnClickModal: false
+  }).then(() => true).catch(() => null).finally(() => {
+    confirmState.visible = false
+    confirmState.resolve = null
   })
 }
 
 export function promptDialog(payload) {
-  return confirmDialog({
-    ...payload,
-    input: true,
-    confirmText: payload.confirmText || '保存'
+  confirmState.visible = true
+  confirmState.title = payload.title || '确认操作'
+  confirmState.message = payload.message || ''
+  confirmState.tone = payload.tone || 'default'
+  confirmState.confirmText = payload.confirmText || '保存'
+  confirmState.cancelText = payload.cancelText || '取消'
+  confirmState.input = true
+  confirmState.inputValue = payload.inputValue || ''
+  confirmState.inputPlaceholder = payload.inputPlaceholder || ''
+
+  return ElMessageBox.prompt(confirmState.message, confirmState.title, {
+    type: boxType(confirmState.tone),
+    confirmButtonText: confirmState.confirmText,
+    cancelButtonText: confirmState.cancelText,
+    inputValue: confirmState.inputValue,
+    inputPlaceholder: confirmState.inputPlaceholder,
+    closeOnClickModal: false
+  }).then(({ value }) => value).catch(() => null).finally(() => {
+    confirmState.visible = false
+    confirmState.resolve = null
   })
 }
 

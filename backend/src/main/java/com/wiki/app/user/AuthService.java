@@ -110,6 +110,7 @@ public class AuthService {
         validateAvatarUrl(avatarUrl);
         user.setAvatarUrl(avatarUrl);
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        user.setDemoPassword(request.getPassword());
         user.setNickname(request.getUsername());
         user.setRole(UserRole.USER);
         userRepository.save(user);

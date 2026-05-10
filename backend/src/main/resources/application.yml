@@ -56,7 +56,8 @@ wiki:
   admin-bootstrap-enabled: ${ADMIN_BOOTSTRAP_ENABLED:true}
   admin-username: ${ADMIN_USERNAME:admin}
   admin-password: ${ADMIN_PASSWORD:Admin@123456}
-  admin-nickname: ${ADMIN_NICKNAME:System Administrator}
+  admin-nickname: ${ADMIN_NICKNAME:平台管理员}
+  demo-data-enabled: ${DEMO_DATA_ENABLED:true}
   verify-code-expire-minutes: 5
   verify-code-send-interval-seconds: 60
   recycle-reserve-days: 30

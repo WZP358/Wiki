@@ -14,6 +14,35 @@ function openAdminApp() {
   window.location.href = ADMIN_APP_URL
 }
 
+function readStoredUserRole() {
+  try {
+    const user = JSON.parse(localStorage.getItem('wiki-user') || 'null')
+    return user?.role || ''
+  } catch {
+    return ''
+  }
+}
+
+function readTokenRole(token) {
+  try {
+    const payload = token.split('.')[1]
+    const normalized = payload.replace(/-/g, '+').replace(/_/g, '/')
+    const json = decodeURIComponent(
+      atob(normalized)
+        .split('')
+        .map(ch => `%${(`00${ch.charCodeAt(0).toString(16)}`).slice(-2)}`)
+        .join('')
+    )
+    return JSON.parse(json)?.role || ''
+  } catch {
+    return ''
+  }
+}
+
+function isAdminToken(token) {
+  return readStoredUserRole() === 'ADMIN' || readTokenRole(token) === 'ADMIN'
+}
+
 const routes = [
   { path: '/auth', component: AuthPage, meta: { public: true } },
   { path: '/', component: DashboardPage },
@@ -46,6 +75,11 @@ router.beforeEach((to) => {
   const token = localStorage.getItem('wiki-token')
   if (!token) {
     return '/auth'
+  }
+
+  if (isAdminToken(token)) {
+    openAdminApp()
+    return false
   }
 
   return true

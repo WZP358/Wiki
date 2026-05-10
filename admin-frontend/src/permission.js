@@ -3,7 +3,7 @@ import store from './store'
 import { Message } from 'element-ui'
 import NProgress from 'nprogress'
 import 'nprogress/nprogress.css'
-import { getToken } from '@/utils/auth'
+import { getToken, removeToken } from '@/utils/auth'
 import { isPathMatch } from '@/utils/validate'
 import { isRelogin } from '@/utils/request'
 
@@ -17,14 +17,17 @@ const isWhiteList = (path) => {
 
 router.beforeEach((to, from, next) => {
   NProgress.start()
+  if (to.path === '/login') {
+    removeToken()
+    next()
+    NProgress.done()
+    return
+  }
   if (getToken()) {
     to.meta.title && store.dispatch('settings/setTitle', to.meta.title)
     const isLock = store.getters.isLock
     /* has token*/
-    if (to.path === '/login') {
-      next({ path: '/' })
-      NProgress.done()
-    } else if (isWhiteList(to.path)) {
+    if (isWhiteList(to.path)) {
       next()
     } else if (isLock && to.path !== '/lock') {
       next({ path: '/lock' })

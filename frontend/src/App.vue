@@ -45,18 +45,12 @@
     </main>
 
     <LoadingMask />
-    <AppToast />
-    <AppConfirmDialog />
-    <ErrorDialog />
   </div>
 </template>
 
 <script setup>
 import { computed, onMounted, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import ErrorDialog from './components/ErrorDialog.vue'
-import AppToast from './components/AppToast.vue'
-import AppConfirmDialog from './components/AppConfirmDialog.vue'
 import LoadingMask from './components/LoadingMask.vue'
 import LeftSidebar from './components/LeftSidebar.vue'
 import KbDrawer from './components/KbDrawer.vue'

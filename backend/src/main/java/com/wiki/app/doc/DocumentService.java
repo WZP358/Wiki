@@ -468,6 +468,12 @@ public class DocumentService {
         return doc;
     }
 
+    public WikiDocument requireReadable(Long docId, CurrentUser user) {
+        WikiDocument doc = loadActive(docId);
+        ensureReadable(doc, user);
+        return doc;
+    }
+
     private void ensureReadable(WikiDocument doc, CurrentUser user) {
         knowledgeBaseService.ensureKbVisible(doc.getKbId(), user);
         if (!canRead(doc, user)) {
@@ -502,6 +508,9 @@ public class DocumentService {
 
     private void ensureEditable(WikiDocument doc, CurrentUser user) {
         if (doc.getVisibility() == DocVisibility.PRIVATE) {
+            if (doc.getOwnerId().equals(user.getUserId())) {
+                return;
+            }
             throw new BusinessException(ErrorCode.FORBIDDEN, "私有文档只能由作者维护。");
         }
 

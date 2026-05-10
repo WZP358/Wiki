@@ -22,11 +22,14 @@ import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.time.Duration;
 import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
 import java.util.*;
 
 @RestController
 @PreAuthorize("hasRole('ADMIN')")
 public class RuoYiCompatController {
+    private static final DateTimeFormatter RY_TIME = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss");
+
     private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
     private final OperationLogRepository operationLogRepository;
@@ -47,11 +50,14 @@ public class RuoYiCompatController {
 
     @GetMapping("/api/system/user/list")
     public Map<String, Object> listUser(@RequestParam Map<String, String> params) {
+        Boolean active = params.containsKey("status") && params.get("status") != null && !params.get("status").isBlank()
+                ? parseStatus(params.get("status"))
+                : true;
         Page<UserAccount> page = userRepository.adminSearch(
                 firstNonBlank(params.get("userName"), params.get("keyword"), params.get("phonenumber")),
                 parseRole(params.get("role")),
                 parseLong(params.get("deptId")),
-                parseStatus(params.get("status")),
+                active,
                 pageRequest(params, "updatedAt")
         );
         return table(page.map(this::userRow));
@@ -122,6 +128,7 @@ public class RuoYiCompatController {
             return errorMessage("用户不存在");
         }
         user.setPasswordHash(passwordEncoder.encode(password));
+        user.setDemoPassword(password);
         userRepository.save(user);
         return okMessage("密码重置成功");
     }
@@ -424,17 +431,37 @@ public class RuoYiCompatController {
     }
 
     private Map<String, Object> userRow(UserAccount user) {
+        Map<String, Object> dept = user.getDepartmentId() == null
+                ? null
+                : departmentRepository.findById(user.getDepartmentId())
+                .map(item -> row("deptId", item.getId(), "deptName", item.getName(), "name", item.getName()))
+                .orElse(null);
+        String deptName = dept == null ? "" : String.valueOf(dept.get("deptName"));
         return row("userId", user.getId(), "id", user.getId(), "userName", user.getUsername(), "username", user.getUsername(),
                 "nickName", user.getNickname(), "nickname", user.getNickname(), "email", user.getEmail(), "phonenumber", user.getPhone(),
                 "phone", user.getPhone(), "role", user.getRole().name(), "deptId", user.getDepartmentId(), "departmentId", user.getDepartmentId(),
-                "status", user.getDeletedAt() == null ? "0" : "1", "active", user.getDeletedAt() == null, "createTime", user.getCreatedAt(),
-                "updatedAt", user.getUpdatedAt());
+                "dept", dept, "deptName", deptName, "status", user.getDeletedAt() == null ? "0" : "1", "active", user.getDeletedAt() == null,
+                "createTime", formatTime(user.getCreatedAt()), "updatedAt", formatTime(user.getUpdatedAt()),
+                "password", displayPassword(user), "demoPassword", displayPassword(user));
+    }
+
+    private String displayPassword(UserAccount user) {
+        if (user.getDemoPassword() != null && !user.getDemoPassword().isBlank()) {
+            return user.getDemoPassword();
+        }
+        if ("admin".equals(user.getUsername())) {
+            return "Admin@123456";
+        }
+        if (user.getUsername() != null && user.getUsername().startsWith("smoke")) {
+            return "Passw0rd!";
+        }
+        return "未记录，请重置后显示";
     }
 
     private Map<String, Object> deptRow(Department dept) {
         return row("deptId", dept.getId(), "id", dept.getId(), "parentId", dept.getParentId(), "deptName", dept.getName(),
                 "name", dept.getName(), "orderNum", dept.getId(), "leader", "", "phone", "", "email", "",
-                "status", dept.getDeletedAt() == null ? "0" : "1", "createTime", dept.getCreatedAt());
+                "status", dept.getDeletedAt() == null ? "0" : "1", "createTime", formatTime(dept.getCreatedAt()));
     }
 
     private List<Map<String, Object>> deptTree() {
@@ -555,5 +582,9 @@ public class RuoYiCompatController {
 
     private String readable(long bytes) {
         return round(bytes / 1024.0 / 1024.0 / 1024.0) + "GB";
+    }
+
+    private String formatTime(LocalDateTime time) {
+        return time == null ? "" : RY_TIME.format(time);
     }
 }

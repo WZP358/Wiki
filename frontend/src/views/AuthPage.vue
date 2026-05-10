@@ -71,6 +71,7 @@ import { showToast } from '../utils/errorBus'
 
 const router = useRouter()
 const authStore = useAuthStore()
+const ADMIN_APP_URL = import.meta.env.VITE_ADMIN_APP_URL || 'http://localhost:5181'
 const mode = ref('login')
 const tip = ref('')
 const submitting = ref(false)
@@ -152,6 +153,10 @@ async function login() {
   try {
     const res = await authApi.login(loginForm)
     authStore.setLogin(res)
+    if (res?.user?.role === 'ADMIN') {
+      window.location.href = ADMIN_APP_URL
+      return
+    }
     router.push('/')
   } catch (e) {
     const status = e?.response?.status

@@ -25,17 +25,20 @@ import java.util.stream.Collectors;
 public class DocumentCommentService {
     private final DocumentCommentRepository commentRepository;
     private final WikiDocumentRepository documentRepository;
+    private final DocumentService documentService;
     private final UserRepository userRepository;
     private final SnowflakeIdGenerator idGenerator;
     private final OperationLogService operationLogService;
 
     public DocumentCommentService(DocumentCommentRepository commentRepository,
                                  WikiDocumentRepository documentRepository,
+                                 DocumentService documentService,
                                  UserRepository userRepository,
                                  SnowflakeIdGenerator idGenerator,
                                  OperationLogService operationLogService) {
         this.commentRepository = commentRepository;
         this.documentRepository = documentRepository;
+        this.documentService = documentService;
         this.userRepository = userRepository;
         this.idGenerator = idGenerator;
         this.operationLogService = operationLogService;
@@ -43,6 +46,7 @@ public class DocumentCommentService {
 
     @Transactional
     public CommentResponse create(Long documentId, CreateCommentRequest request, CurrentUser user, String ip) {
+        documentService.requireReadable(documentId, user);
         WikiDocument document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "文档不存在"));
 
@@ -76,6 +80,7 @@ public class DocumentCommentService {
     }
 
     public List<CommentResponse> listByDocument(Long documentId, CurrentUser user) {
+        documentService.requireReadable(documentId, user);
         WikiDocument document = documentRepository.findById(documentId)
                 .orElseThrow(() -> new BusinessException(ErrorCode.NOT_FOUND, "文档不存在"));
 

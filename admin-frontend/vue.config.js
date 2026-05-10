@@ -11,7 +11,7 @@ const name = process.env.VUE_APP_TITLE || '若依管理系统' // 网页标题
 
 const baseUrl = 'http://127.0.0.1:8080' // 后端接口
 
-const port = process.env.port || process.env.npm_config_port || 5180 // 端口
+const port = process.env.port || process.env.npm_config_port || 5181 // 端口
 
 // vue.config.js 配置说明
 //官方vue.config.js 参考文档 https://cli.vuejs.org/zh/config/#css-loaderoptions
@@ -34,6 +34,11 @@ module.exports = {
     host: '0.0.0.0',
     port: port,
     open: true,
+    historyApiFallback: {
+      rewrites: [
+        { from: /./, to: '/index.html' }
+      ]
+    },
     proxy: {
       // detail: https://cli.vuejs.org/config/#devserver-proxy
       [process.env.VUE_APP_BASE_API]: {
