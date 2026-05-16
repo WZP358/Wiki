@@ -8,12 +8,6 @@ import KbHomePage from '../views/KbHomePage.vue'
 import UserHomePage from '../views/UserHomePage.vue'
 import SettingsPage from '../views/SettingsPage.vue'
 
-const ADMIN_APP_URL = import.meta.env.VITE_ADMIN_APP_URL || 'http://localhost:5181'
-
-function openAdminApp() {
-  window.location.href = ADMIN_APP_URL
-}
-
 function readStoredUserRole() {
   try {
     const user = JSON.parse(localStorage.getItem('wiki-user') || 'null')
@@ -51,15 +45,7 @@ const routes = [
   { path: '/kb/:kbId', component: KbHomePage },
   { path: '/user/:userId', component: UserHomePage },
   { path: '/settings/:kbId?', component: SettingsPage },
-  { path: '/profile', component: ProfilePage },
-  {
-    path: '/admin/:pathMatch(.*)*',
-    meta: { public: true },
-    beforeEnter: () => {
-      openAdminApp()
-      return false
-    }
-  }
+  { path: '/profile', component: ProfilePage }
 ]
 
 const router = createRouter({
@@ -74,12 +60,7 @@ router.beforeEach((to) => {
 
   const token = localStorage.getItem('wiki-token')
   if (!token) {
-    return '/auth'
-  }
-
-  if (isAdminToken(token)) {
-    openAdminApp()
-    return false
+    return { path: '/auth', query: { redirect: to.fullPath } }
   }
 
   return true

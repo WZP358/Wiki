@@ -63,15 +63,15 @@
 
 <script setup>
 import { computed, reactive, ref } from 'vue'
-import { useRouter } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
 import { ElMessageBox } from 'element-plus'
 import { authApi } from '../api/modules'
 import { useAuthStore } from '../store/auth'
 import { showToast } from '../utils/errorBus'
 
 const router = useRouter()
+const route = useRoute()
 const authStore = useAuthStore()
-const ADMIN_APP_URL = import.meta.env.VITE_ADMIN_APP_URL || 'http://localhost:5181'
 const mode = ref('login')
 const tip = ref('')
 const submitting = ref(false)
@@ -153,11 +153,12 @@ async function login() {
   try {
     const res = await authApi.login(loginForm)
     authStore.setLogin(res)
+    const redirect = typeof route.query.redirect === 'string' ? route.query.redirect : ''
     if (res?.user?.role === 'ADMIN') {
-      window.location.href = ADMIN_APP_URL
+      window.location.href = redirect.startsWith('/admin') ? redirect : '/admin/'
       return
     }
-    router.push('/')
+    router.push(redirect && !redirect.startsWith('/admin') ? redirect : '/')
   } catch (e) {
     const status = e?.response?.status
     tip.value = status === 401 ? '账号或密码错误' : '登录失败，请稍后重试'

@@ -1,0 +1,92 @@
+name: wiki-nginx-deploy
+
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: wiki-mysql
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      MYSQL_DATABASE: wiki
+      MYSQL_USER: wiki
+      MYSQL_PASSWORD: wiki123456
+      MYSQL_ROOT_PASSWORD: root123456
+    ports:
+      - "3307:3306"
+    volumes:
+      - wiki-mysql-data:/var/lib/mysql
+      - ./backend/sql/wiki.sql:/docker-entrypoint-initdb.d/01-wiki.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p\"$${MYSQL_ROOT_PASSWORD}\" --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    container_name: wiki-redis
+    restart: unless-stopped
+    command: ["redis-server", "--appendonly", "yes"]
+    volumes:
+      - wiki-redis-data:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 3s
+      retries: 12
+
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    image: wiki-backend:local
+    container_name: wiki-backend
+    restart: unless-stopped
+    environment:
+      TZ: Asia/Shanghai
+      DB_URL: jdbc:mysql://mysql:3306/wiki?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai&allowPublicKeyRetrieval=true&useSSL=false
+      DB_USERNAME: wiki
+      DB_PASSWORD: wiki123456
+      REDIS_HOST: redis
+      REDIS_PORT: 6379
+      JWT_SECRET: change-me-to-a-long-random-secret-for-production-32b-plus
+      ADMIN_BOOTSTRAP_ENABLED: "true"
+      ADMIN_USERNAME: admin
+      ADMIN_PASSWORD: Admin@123456
+      ADMIN_NICKNAME: 平台管理员
+      DEMO_DATA_ENABLED: "false"
+      LOCAL_STORAGE_DIR: /app/storage/docs
+      AVATAR_STORAGE_DIR: /app/storage/avatars
+      DOC_IMAGE_STORAGE_DIR: /app/storage/doc-images
+    depends_on:
+      mysql:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    ports:
+      - "18080:8080"
+    volumes:
+      - wiki-backend-storage:/app/storage
+
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: /api
+    image: wiki-nginx:local
+    container_name: wiki-nginx
+    restart: unless-stopped
+    environment:
+      BACKEND_HOST: backend
+      BACKEND_PORT: 8080
+    depends_on:
+      backend:
+        condition: service_healthy
+    ports:
+      - "8088:80"
+
+volumes:
+  wiki-mysql-data:
+  wiki-redis-data:
+  wiki-backend-storage:

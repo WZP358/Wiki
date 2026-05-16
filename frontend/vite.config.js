@@ -1,7 +1,7 @@
 import { defineConfig } from 'vite'
 import vue from '@vitejs/plugin-vue'
 
-const ADMIN_APP_URL = process.env.VITE_ADMIN_APP_URL || 'http://localhost:5181'
+const ADMIN_APP_URL = process.env.VITE_ADMIN_APP_URL || '/admin'
 const API_BASE_URL = process.env.VITE_API_BASE_URL || 'http://localhost:8080/api'
 
 function portalUrlsPlugin() {

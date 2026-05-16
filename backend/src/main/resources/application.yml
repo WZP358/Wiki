@@ -18,8 +18,9 @@ spring:
     show-sql: false
   data:
     redis:
-      host: localhost
-      port: 6379
+      host: ${REDIS_HOST:localhost}
+      port: ${REDIS_PORT:6379}
+      password: ${REDIS_PASSWORD:}
   mail:
     host: ${MAIL_HOST:}
     username: ${MAIL_USERNAME:}
@@ -62,9 +63,9 @@ wiki:
   verify-code-send-interval-seconds: 60
   recycle-reserve-days: 30
   draft-auto-save-seconds: 30
-  local-storage-dir: ./storage/docs
-  avatar-storage-dir: ./storage/avatars
-  doc-image-storage-dir: ./storage/doc-images
+  local-storage-dir: ${LOCAL_STORAGE_DIR:./storage/docs}
+  avatar-storage-dir: ${AVATAR_STORAGE_DIR:./storage/avatars}
+  doc-image-storage-dir: ${DOC_IMAGE_STORAGE_DIR:./storage/doc-images}
   sms-enabled: false
   sms-gateway-url: ${SMS_GATEWAY_URL:}
   sms-api-key: ${SMS_API_KEY:}

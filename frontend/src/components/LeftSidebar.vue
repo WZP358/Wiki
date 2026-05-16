@@ -144,7 +144,6 @@ const emit = defineEmits([
   'request-close-menus'
 ])
 
-const ADMIN_APP_URL = import.meta.env.VITE_ADMIN_APP_URL || 'http://localhost:5181'
 const router = useRouter()
 const auth = useAuthStore()
 const showCreateKb = ref(false)
@@ -251,7 +250,7 @@ function handleUserCommand(command) {
   if (command === 'profile') {
     router.push('/profile')
   } else if (command === 'admin') {
-    window.open(ADMIN_APP_URL, '_blank', 'noopener,noreferrer')
+    window.location.href = '/admin/'
   } else if (command === 'logout') {
     auth.logout()
     router.push('/auth')

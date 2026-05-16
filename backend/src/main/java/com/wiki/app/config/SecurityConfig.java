@@ -39,8 +39,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/auth/login", "/api/auth/register", "/api/auth/send-code", "/api/auth/upload-avatar").permitAll()
                         .requestMatchers("/api/admin/**", "/api/wiki/admin/**", "/api/system/**", "/api/monitor/**", "/api/tool/**").hasRole("ADMIN")
                         .requestMatchers("/api/kbs/**", "/api/docs/**", "/api/v1/docs/**", "/api/departments/**",
-                                "/api/favorites/**", "/api/templates/**", "/api/shares/**").hasRole("USER")
-                        .requestMatchers("/api/auth/send-update-code", "/api/auth/profile", "/api/auth/public-user/**").hasRole("USER")
+                                "/api/favorites/**", "/api/templates/**", "/api/shares/**").hasAnyRole("USER", "ADMIN")
+                        .requestMatchers("/api/auth/send-update-code", "/api/auth/profile", "/api/auth/public-user/**").hasAnyRole("USER", "ADMIN")
                         .anyRequest().authenticated()
                 )
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);

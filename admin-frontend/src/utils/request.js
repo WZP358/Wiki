@@ -64,7 +64,9 @@ service.interceptors.response.use(res => {
 
 function handleUnauthorized() {
   removeToken()
-  if (window.location.pathname === '/login') {
+  const basePath = process.env.BASE_URL || '/'
+  const normalizedBase = basePath.replace(/\/$/, '')
+  if (window.location.pathname === `${normalizedBase}/login`) {
     return
   }
   if (isRelogin.show) {
@@ -78,7 +80,7 @@ function handleUnauthorized() {
   }).then(() => {
     isRelogin.show = false
     store.dispatch('FedLogOut').then(() => {
-      location.href = '/login'
+      location.href = `${basePath}login`
     })
   }).catch(() => {
     isRelogin.show = false
